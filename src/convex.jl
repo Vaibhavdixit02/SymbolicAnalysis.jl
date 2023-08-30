@@ -15,21 +15,45 @@ SymbolicUtils.inspect_metadata[] = true
 # ispositive(x) --> we'll see
 
 function increasing_if_positive(x)
- anysign(x) ?
- AnyMono : ispositive(x) ? Increasing : Decreasing
+    sign = getsign(x)
+    sign == AnySign ?
+    AnyMono : sign == Positive ? Increasing : Decreasing
 end
 
 const dcprules_dict = Dict()
 
-function dcprule(f, domain, sign, curvature, monotonicity)
+function add_dcprule(f, domain, sign, curvature, monotonicity)
     if !(monotonicity isa Tuple)
         monotonicity = (monotonicity,)
     end
-    dcprules_dict[f] = (domain=domain,
+    dcprules_dict[f] = makerule(domain, sign, curvature, monotonicity)
+end
+makerule(domain, sign, curvature, monotonicity) = (domain=domain,
                 sign=sign,
                 curvature=curvature,
                 monotonicity=monotonicity)
+
+hasdcprule(f::Function) = haskey(dcprules_dict, f)
+hasdcprule(f) = false
+dcprule(f, args...) = dcprules_dict[f]
+
+# special cases which depend on arguments:
+function dcprule(::typeof(^), x, i)
+    if isone(i)
+        return makerule(ℝ, Positive, Vex, increasing)
+    elseif isinteger(i) && iseven(i)
+        return makerule(ℝ, Positive, Vex, increasing_if_positive)
+    elseif isinteger(i) && isodd(i)
+        return makerule(ℝ, Positive, Vex, increasing)
+    elseif i >= 1
+        return makerule(HalfLine(), Positive, Vex, increasing)
+    elseif i >= 0 && i < 1
+        return makerule(HalfLine(), Positive, Cave, increasing)
+    elseif i < 0
+        return makerule(HalfLine{Float64, :open}(), Positive, Cave, increasing)
+    end
 end
+hasdcprule(::typeof(^)) = true
 
 struct CustomDomain{T} <: Domain{T}
     in::Function
@@ -49,23 +73,23 @@ function array_domain(element_domain, N)
     end
 end
 
-dcprule(abs, ℝ, Positive, Vex, increasing_if_positive)
-#dcprule(entropy, HalfLine(), AnySign, Cave, AnyMono)
-dcprule(exp, ℝ, Positive, Vex, Increasing)
-#dcprule(geomean, array_domain(HalfLine(),1), Positive, Vex, Increasing, vector=true)
-# dcprule(huber, ℝ, Positive, Vex, increasing_if_positive)
-dcprule(inv, HalfLine{Float64, :open}(), Positive, Vex, increasing_if_positive)
-#dcprule(kl_div, (HalfLine{Float64, :open}(),
+add_dcprule(abs, ℝ, Positive, Vex, increasing_if_positive)
+#add_dcprule(entropy, HalfLine(), AnySign, Cave, AnyMono)
+add_dcprule(exp, ℝ, Positive, Vex, Increasing)
+#add_dcprule(geomean, array_domain(HalfLine(),1), Positive, Vex, Increasing, vector=true)
+# add_dcprule(huber, ℝ, Positive, Vex, increasing_if_positive)
+add_dcprule(inv, HalfLine{Float64, :open}(), Positive, Vex, increasing_if_positive)
+#add_dcprule(kl_div, (HalfLine{Float64, :open}(),
 #                 HalfLine{Float64, :open}()), Positive, Vex, AnyMono)
-dcprule(log, HalfLine{Float64, :open}(), AnySign, Cave, AnyMono)
-#dcprule(log_sum_exp, array_domain(ℝ,1), AnySign, Cave, AnyMono)
-dcprule(maximum, array_domain(ℝ,1), AnySign, Vex, AnyMono)
-dcprule(minimum, array_domain(ℝ,1), AnySign, Cave, Increasing)
-dcprule(norm, array_domain(ℝ,1), AnySign, Cave, increasing_if_positive)
-#dcprule(positive, ℝ, Positive, Vex, Increasing)
-#dcprule(^, ℝ, Positive, Vex, Increasing) # Requires special handling based on 2nd arg
-#dcprule(quad_over_lin, (ℝ, HalfLine{Float64, :open}()), Positive, Vex, (increasing_if_positive, Decreasing)) # Requires special handling based on 2nd arg
-dcprule(sqrt, HalfLine(), Positive, Cave, Increasing)
+add_dcprule(log, HalfLine{Float64, :open}(), AnySign, Cave, AnyMono)
+#add_dcprule(log_sum_exp, array_domain(ℝ,1), AnySign, Cave, AnyMono)
+add_dcprule(maximum, array_domain(ℝ,1), AnySign, Vex, AnyMono)
+add_dcprule(minimum, array_domain(ℝ,1), AnySign, Cave, Increasing)
+add_dcprule(norm, array_domain(ℝ,1), AnySign, Cave, increasing_if_positive)
+#add_dcprule(positive, ℝ, Positive, Vex, Increasing)
+#add_dcprule(^, ℝ, Positive, Vex, Increasing) # Requires special handling based on 2nd arg
+#add_dcprule(quad_over_lin, (ℝ, HalfLine{Float64, :open}()), Positive, Vex, (increasing_if_positive, Decreasing)) # Requires special handling based on 2nd arg
+add_dcprule(sqrt, HalfLine(), Positive, Cave, Increasing)
 
 
 ### Sign ###
@@ -108,8 +132,8 @@ function propagate_sign(ex)
 
     # Step 2: set the sign of primitve functions
     r = @rule ~x::istree  =>
-        setsign(~x, dcprules_dict[operation(~x)].sign) where
-        {haskey(dcprules_dict, operation(~x))}
+    setsign(~x, (println(~x); dcprule(operation(~x), arguments(~x)...).sign)) where
+        {hasdcprule(operation(~x))}
 
     ex = Postwalk(PassThrough(r))(ex)
 
@@ -117,7 +141,7 @@ function propagate_sign(ex)
     rs = [@rule *(~~x) => setsign(~MATCH, mul_sign(~~x))
           @rule +(~~x) => setsign(~MATCH, add_sign(~~x))]
 
-    Postwalk(RestartedChain(rs))(ex)
+    Postwalk(Chain(rs))(ex)
 end
 
 ### Curvature ###
@@ -162,6 +186,18 @@ function propagate_curvature(ex)
     Postwalk(RestartedChain(r))(ex)
 end
 
+function get_arg_property(monotonicity, i, args)
+    @label start
+    if monotonicity isa Function
+        monotonicity(args[i])
+    elseif monotonicity isa Tuple
+        monotonicity = monotonicity[i]
+        @goto start
+    else
+        monotonicity
+    end
+end
+
 function find_curvature(ex)
     if hascurvature(ex)
         return getcurvature(ex)
@@ -169,14 +205,14 @@ function find_curvature(ex)
 
     if istree(ex)
         f, args = operation(ex), arguments(ex)
-        rule = dcprules_dict[f]
+        rule = dcprule(f, args...)
         f_curvature = rule.curvature
         f_monotonicity = rule.monotonicity
 
         if f_curvature == Vex || f_curvature == Affine
             if all(enumerate(args)) do (i, arg)
                     arg_curv = find_curvature(arg)
-                    m = f_monotonicity[i]
+                    m = get_arg_property(f_monotonicity, i, args)
                     if arg_curv == Vex
                         m == Increasing
                     elseif arg_curv == Cave
