@@ -40,17 +40,17 @@ dcprule(f, args...) = dcprules_dict[f]
 # special cases which depend on arguments:
 function dcprule(::typeof(^), x, i)
     if isone(i)
-        return makerule(ℝ, Positive, Vex, increasing)
+        return makerule(ℝ, Positive, Vex, Increasing)
     elseif isinteger(i) && iseven(i)
         return makerule(ℝ, Positive, Vex, increasing_if_positive)
     elseif isinteger(i) && isodd(i)
-        return makerule(ℝ, Positive, Vex, increasing)
+        return makerule(ℝ, Positive, Vex, Increasing)
     elseif i >= 1
-        return makerule(HalfLine(), Positive, Vex, increasing)
+        return makerule(HalfLine(), Positive, Vex, Increasing)
     elseif i >= 0 && i < 1
-        return makerule(HalfLine(), Positive, Cave, increasing)
+        return makerule(HalfLine(), Positive, Cave, Increasing)
     elseif i < 0
-        return makerule(HalfLine{Float64, :open}(), Positive, Cave, increasing)
+        return makerule(HalfLine{Float64, :open}(), Positive, Cave, Increasing)
     end
 end
 hasdcprule(::typeof(^)) = true
@@ -74,7 +74,7 @@ function array_domain(element_domain, N)
 end
 
 add_dcprule(abs, ℝ, Positive, Vex, increasing_if_positive)
-#add_dcprule(entropy, HalfLine(), AnySign, Cave, AnyMono)
+# add_dcprule(entropy, HalfLine(), AnySign, Cave, AnyMono)
 add_dcprule(exp, ℝ, Positive, Vex, Increasing)
 #add_dcprule(geomean, array_domain(HalfLine(),1), Positive, Vex, Increasing, vector=true)
 # add_dcprule(huber, ℝ, Positive, Vex, increasing_if_positive)
