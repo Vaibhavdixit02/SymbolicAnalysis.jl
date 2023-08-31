@@ -1,6 +1,8 @@
 using Symbolics
 using DomainSets
 using LinearAlgebra
+using LogExpFunctions
+using StatsBase
 
 import Symbolics: Symbolic, issym, istree
 using Symbolics.Rewriters
@@ -55,6 +57,17 @@ function dcprule(::typeof(^), x, i)
 end
 hasdcprule(::typeof(^)) = true
 
+function dcprule(::typeof(LogExpFunctions.xlogx), x)
+    if x < 0.368
+        return makerule(HalfLine(), Negative, Vex, Decreasing)
+    elseif x >= 0.368 && x < 1
+        return makerule(HalfLine(), Negative, Vex, Increasing)
+    elseif x >= 1
+        return makerule(HalfLine(), Positive, Vex, Increasing)
+    end
+end
+hasdcprule(::typeof(LogExpFunctions.xlogx)) = true
+
 struct CustomDomain{T} <: Domain{T}
     in::Function
 end
@@ -74,13 +87,9 @@ function array_domain(element_domain, N)
 end
 
 add_dcprule(abs, ℝ, Positive, Vex, increasing_if_positive)
-# add_dcprule(entropy, HalfLine(), AnySign, Cave, AnyMono)
 add_dcprule(exp, ℝ, Positive, Vex, Increasing)
-#add_dcprule(geomean, array_domain(HalfLine(),1), Positive, Vex, Increasing, vector=true)
 # add_dcprule(huber, ℝ, Positive, Vex, increasing_if_positive)
 add_dcprule(inv, HalfLine{Float64, :open}(), Positive, Vex, increasing_if_positive)
-#add_dcprule(kl_div, (HalfLine{Float64, :open}(),
-#                 HalfLine{Float64, :open}()), Positive, Vex, AnyMono)
 add_dcprule(log, HalfLine{Float64, :open}(), AnySign, Cave, AnyMono)
 #add_dcprule(log_sum_exp, array_domain(ℝ,1), AnySign, Cave, AnyMono)
 add_dcprule(maximum, array_domain(ℝ,1), AnySign, Vex, AnyMono)
