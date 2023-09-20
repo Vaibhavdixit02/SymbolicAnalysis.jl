@@ -1,3 +1,5 @@
+module SymbolicsDCP
+
 using Symbolics
 using DomainSets
 using LinearAlgebra
@@ -14,7 +16,47 @@ SymbolicUtils.inspect_metadata[] = true
 @enum Curvature Vex Cave Affine UnknownCurvature
 @enum Monotonicity Increasing Decreasing AnyMono
 
-# ispositive(x) --> we'll see
+struct CustomDomain{T} <: Domain{T}
+    in::Function
+end
+
+Base.in(x, c::CustomDomain) = c.in(x)
+
+function array_domain(element_domain)
+    CustomDomain{AbstractArray}() do xs
+        all(in(element_domain), xs)
+    end
+end
+
+function array_domain(element_domain, N)
+    CustomDomain{AbstractArray{<:Any, N}}() do xs
+        ndims(xs) == N && all(in(element_domain), xs)
+    end
+end
+
+function symmetric_domain()
+    CustomDomain{AbstractArray{<:Any, 2}}(issymmetric)
+end
+
+function semidefinite_domain()
+    CustomDomain{AbstractArray{<:Any, 2}}(isposdef) #not semi so needs to change
+end
+
+function negsemidefinite_domain()
+    CustomDomain{AbstractArray{<:Any, 2}}(isposdef ∘ -) #not semi so needs to change
+end
+
+function definite_domain()
+    CustomDomain{AbstractArray{<:Any, 2}}(isposdef)
+end
+
+function negdefinite_domain()
+    CustomDomain{AbstractArray{<:Any, 2}}(isposdef ∘ -)
+end
+
+function function_domain()
+    CustomDomain{Function}(x -> typeassert(x, Function))
+end
 
 function increasing_if_positive(x)
     sign = getsign(x)
@@ -39,8 +81,10 @@ hasdcprule(f::Function) = haskey(dcprules_dict, f)
 hasdcprule(f) = false
 dcprule(f, args...) = dcprules_dict[f]
 
+### DCP atom rules
+
 # special cases which depend on arguments:
-function dcprule(::typeof(^), x, i)
+function dcprule(::typeof(^), x::Symbolic, i)
     if isone(i)
         return makerule(ℝ, Positive, Vex, Increasing)
     elseif isinteger(i) && iseven(i)
@@ -52,53 +96,34 @@ function dcprule(::typeof(^), x, i)
     elseif i >= 0 && i < 1
         return makerule(HalfLine(), Positive, Cave, Increasing)
     elseif i < 0
-        return makerule(HalfLine{Float64, :open}(), Positive, Cave, Increasing)
+        return makerule(HalfLine{Float64, :closed}(), Positive, Cave, Increasing)
     end
 end
 hasdcprule(::typeof(^)) = true
 
-function dcprule(::typeof(LogExpFunctions.xlogx), x)
-    if x < 0.368
-        return makerule(HalfLine(), Negative, Vex, Decreasing)
-    elseif x >= 0.368 && x < 1
-        return makerule(HalfLine(), Negative, Vex, Increasing)
-    elseif x >= 1
-        return makerule(HalfLine(), Positive, Vex, Increasing)
-    end
-end
-hasdcprule(::typeof(LogExpFunctions.xlogx)) = true
+# add_dcprule(+, ℝ, AnySign, Affine, Increasing)
 
-struct CustomDomain{T} <: Domain{T}
-    in::Function
-end
-
-Base.in(x, c::CustomDomain) = c.in(x)
-
-function array_domain(element_domain)
-    CustomDomain{AbstractArray}() do xs
-        all(in(element_domain), xs)
-    end
-end
-
-function array_domain(element_domain, N)
-    CustomDomain{AbstractArray{<:Any, N}}() do xs
-        ndims(xs) == N && all(in(element_domain), xs)
-    end
-end
-
-add_dcprule(abs, ℝ, Positive, Vex, increasing_if_positive)
-add_dcprule(exp, ℝ, Positive, Vex, Increasing)
-# add_dcprule(huber, ℝ, Positive, Vex, increasing_if_positive)
-add_dcprule(inv, HalfLine{Float64, :open}(), Positive, Vex, increasing_if_positive)
-add_dcprule(log, HalfLine{Float64, :open}(), AnySign, Cave, AnyMono)
-#add_dcprule(log_sum_exp, array_domain(ℝ,1), AnySign, Cave, AnyMono)
-add_dcprule(maximum, array_domain(ℝ,1), AnySign, Vex, AnyMono)
-add_dcprule(minimum, array_domain(ℝ,1), AnySign, Cave, Increasing)
-add_dcprule(norm, array_domain(ℝ,1), AnySign, Cave, increasing_if_positive)
-#add_dcprule(positive, ℝ, Positive, Vex, Increasing)
-#add_dcprule(^, ℝ, Positive, Vex, Increasing) # Requires special handling based on 2nd arg
-#add_dcprule(quad_over_lin, (ℝ, HalfLine{Float64, :open}()), Positive, Vex, (increasing_if_positive, Decreasing)) # Requires special handling based on 2nd arg
-add_dcprule(sqrt, HalfLine(), Positive, Cave, Increasing)
+# function dcprule(::typeof(-), x, y)
+#     if y >= 0
+#         if x >= 0 && x >= y 
+#             return makerule((HalfLine(), HalfLine()), Positive, Affine, (Increasing, Decreasing))
+#         elseif x >= 0 && x < y
+#             return makerule((HalfLine(), HalfLine()), Negative, Affine, (Increasing, Decreasing))
+#         elseif x < 0+
+#             return makerule((NegativeHalfLine(), HalfLine()), Negative, Affine, (Increasing, Decreasing))
+#         end
+#     elseif y < 0
+#         if x >= 0
+#             return makerule((HalfLine(), NegativeHalfLine()), Positive, Affine, (Increasing, Decreasing))
+#         else
+#             if x >= y
+#                 return makerule((NegativeHalfLine(), NegativeHalfLine()), Positive, Affine, (Increasing, Decreasing))
+#             else
+#                 return makerule((NegativeHalfLine(), NegativeHalfLine()), Negative, Affine, (Increasing, Decreasing))
+#             end
+#         end
+#     end
+# end
 
 
 ### Sign ###
@@ -141,7 +166,7 @@ function propagate_sign(ex)
 
     # Step 2: set the sign of primitve functions
     r = @rule ~x::istree  =>
-    setsign(~x, (println(~x); dcprule(operation(~x), arguments(~x)...).sign)) where
+    setsign(~x, (dcprule(operation(~x), arguments(~x)...).sign)) where
         {hasdcprule(operation(~x))}
 
     ex = Postwalk(PassThrough(r))(ex)
@@ -258,4 +283,8 @@ function find_curvature(ex)
     else
         return Affine
     end
+end
+
+include("rules.jl")
+
 end
