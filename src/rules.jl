@@ -1,8 +1,4 @@
-
-add_dcprule(abs, ℝ, Positive, Vex, increasing_if_positive)
-add_dcprule(exp, ℝ, Positive, Vex, Increasing)
-Symbolics.@register_symbolic LogExpFunctions.xlogx(x::Number)
-add_dcprule(xlogx, ℝ, AnySign, Vex, AnyMono)
+### DCP atom rules
 
 add_dcprule(dot, (array_domain(ℝ), array_domain(ℝ)), AnySign, Affine, Increasing)
 
@@ -15,8 +11,8 @@ end
 Symbolics.@register_symbolic dotsort(x::Vector, y::Vector)
 add_dcprule(dotsort, (array_domain(ℝ,1), array_domain(ℝ,1)), AnySign, Vex, (AnyMono, increasing_if_positive ∘ minimum))
 
-add_dcprule(StatsBase.geomean, array_domain(HalfLine{Float64, :open}(),1), Positive, Cave, Increasing)
-add_dcprule(StatsBase.harmonicmean, array_domain(HalfLine{Float64, :open}(),1), Positive, Cave, Increasing)
+add_dcprule(StatsBase.geomean, array_domain(HalfLine{Number, :open}(),1), Positive, Cave, Increasing)
+add_dcprule(StatsBase.harmmean, array_domain(HalfLine{Number, :open}(),1), Positive, Cave, Increasing)
 
 function invprod(x::Vector)
     if any(iszero(x))
@@ -26,7 +22,7 @@ function invprod(x::Vector)
 end
 Symbolics.@register_symbolic invprod(x::Vector)
 
-add_dcprule(invprod, array_domain(HalfLine{Float64, :open}()), Positive, Vex, Decreasing)
+add_dcprule(invprod, array_domain(HalfLine{Number, :open}()), Positive, Vex, Decreasing)
 
 add_dcprule(eigmax, symmetric_domain(), AnySign, Vex, AnyMono)
 
@@ -50,7 +46,7 @@ end
 Symbolics.@register_symbolic eigsummin(m::Symmetric, k::Int)
 add_dcprule(eigsummin, (array_domain(ℝ, 2), ℝ), AnySign, Cave, AnyMono)
 
-add_dcprule(LogExpFunctions.logdet, semidefinite_domain(), AnySign, Cave, AnyMono)
+add_dcprule(logdet, semidefinite_domain(), AnySign, Cave, AnyMono)
 
 add_dcprule(LogExpFunctions.logsumexp, array_domain(ℝ,2), AnySign, Vex, Increasing)
 
@@ -101,7 +97,7 @@ function quad_over_lin(x::Matrix, y::Number)
 end
 
 Symbolics.@register_symbolic quad_over_lin(x::Matrix, y::Number)
-add_dcprule(quad_over_lin, (array_domain(ℝ,2), HalfLine{Float64, :open}()), Positive, Vex, (increasing_if_positive, Decreasing))
+add_dcprule(quad_over_lin, (array_domain(ℝ,2), HalfLine{Number, :open}()), Positive, Vex, (increasing_if_positive, Decreasing))
 
 add_dcprule(sum, array_domain(ℝ, 2), AnySign, Affine, Increasing)
 
@@ -143,14 +139,103 @@ end
 Symbolics.@register_symbolic tv(x::Vector{<:Matrix})
 add_dcprule(tv, array_domain(array_domain(ℝ,2), 1), Positive, Vex, AnyMono)
 
+add_dcprule(abs, ℂ, Positive, Vex, increasing_if_positive)
 
-# add_dcprule(huber, ℝ, Positive, Vex, increasing_if_positive)
-add_dcprule(inv, HalfLine{Float64, :closed}(), Positive, Vex, increasing_if_positive)
-add_dcprule(log, HalfLine{Float64, :closed}(), AnySign, Cave, AnyMono)
-#add_dcprule(log_sum_exp, array_domain(ℝ,1), AnySign, Cave, AnyMono)
+add_dcprule(conj, ℂ, AnySign, Affine, AnyMono)
 
+add_dcprule(exp, ℝ, Positive, Vex, Increasing)
 
-#add_dcprule(positive, ℝ, Positive, Vex, Increasing)
-#add_dcprule(^, ℝ, Positive, Vex, Increasing) # Requires special handling based on 2nd arg
-#add_dcprule(quad_over_lin, (ℝ, HalfLine{Float64, :closed}()), Positive, Vex, (increasing_if_positive, Decreasing)) # Requires special handling based on 2nd arg
+Symbolics.@register_symbolic LogExpFunctions.xlogx(x::Number)
+add_dcprule(xlogx, ℝ, AnySign, Vex, AnyMono)
+
+function huber(x::Number, M::Number = 1)
+    if M < 0
+        throw(DomainError(M, "M must be positive"))
+    end
+    
+    if abs(x) <= M
+        return x^2
+    else
+        return 2* M * abs(x) - M^2
+    end
+end
+Symbolics.@register_symbolic huber(x::Number, M::Number)
+add_dcprule(huber, (ℝ, HalfLine()), Positive, Vex, increasing_if_positive)
+
+add_dcprule(imag, ℂ, AnySign, Affine, AnyMono)
+
+add_dcprule(inv, HalfLine{Number, :open}(), Positive, Vex, Decreasing)
+add_dcprule(log, HalfLine{Number, :open}(), AnySign, Cave, Increasing)
+
+add_dcprule(kldivergence, (array_domain(HalfLine{Number, :open},1), array_domain(HalfLine{Number, :open},1)), Positive, Vex, AnyMono)
+
+function lognormcdf(x::Number)
+    return logcdf(Normal, x)
+end
+Symbolics.@register_symbolic lognormcdf(x::Number)
+add_dcprule(lognormcdf, ℝ, Negative, Cave, Increasing)
+
+add_dcprule(log1p, Interval{:open, :open}(-1, Inf), Negative, Cave, Increasing)
+
+add_dcprule(logistic, ℝ, Positive, Vex, Increasing)
+
+add_dcprule(max, (ℝ, ℝ), AnySign, Vex, Increasing)
+add_dcprule(min, (ℝ, ℝ), AnySign, Cave, Increasing)
+
+# special cases which depend on arguments:
+function dcprule(::typeof(^), x::Symbolic, i)
+    if isone(i)
+        return makerule(ℝ, AnySign, Affine, Increasing)
+    elseif isinteger(i) && iseven(i)
+        return makerule(ℝ, Positive, Vex, increasing_if_positive)
+    elseif isinteger(i) && isodd(i)
+        return makerule(HalfLine(), Positive, Vex, Increasing)
+    elseif i >= 1
+        return makerule(HalfLine(), Positive, Vex, Increasing)
+    elseif i > 0 && i < 1
+        return makerule(HalfLine(), Positive, Cave, Increasing)
+    elseif i < 0
+        return makerule(HalfLine{Float64, :closed}(), Positive, Vex, Increasing)
+    end
+end
+hasdcprule(::typeof(^)) = true
+
+add_dcprule(real, ℂ, AnySign, Affine, Increasing)
+
+function rel_entr(x::Number, y::Number)
+    if x < 0 || y < 0
+        throw(DomainError((x, y), "x and y must be positive"))
+    end
+    if x == 0
+        return 0
+    end
+    x * log(x / y)
+end
+Symbolics.@register_symbolic rel_entr(x::Number, y::Number)
+add_dcprule(rel_entr, (HalfLine{Number, :open}(), HalfLine{Number, :open}()), AnySign, Vex, (AnyMono, Decreasing))
+
 add_dcprule(sqrt, HalfLine(), Positive, Cave, Increasing)
+
+add_dcprule(xexpx, HalfLine, Positive, Vex, Increasing)
+
+add_dcprule(conv, (array_domain(ℝ,1), array_domain(ℝ,1)), AnySign, Affine, AnyMono)
+
+add_dcprule(cumsum, array_domain(ℝ), AnySign, Affine, Increasing)
+
+add_dcprule(diagm, array_domain(ℝ,1), AnySign, Affine, Increasing)
+
+add_dcprule(diag, array_domain(ℝ,2), AnySign, Affine, Increasing)
+
+add_dcprule(diff, array_domain(ℝ), AnySign, Affine, Increasing)
+
+add_dcprule(hcat, array_domain(array_domain(ℝ,1), 1), AnySign, Affine, Increasing)
+
+add_dcprule(kron, (array_domain(ℝ,2), array_domain(ℝ,2)), AnySign, Affine, Increasing)
+
+add_dcprule(reshape, array_domain(ℝ, 2), AnySign, Affine, Increasing)
+
+add_dcprule(triu, array_domain(ℝ, 2), AnySign, Affine, Increasing)
+
+add_dcprule(vec, array_domain(ℝ, 2), AnySign, Affine, Increasing)
+
+add_dcprule(vcat, array_domain(array_domain(ℝ,1), 1), AnySign, Affine, Increasing)

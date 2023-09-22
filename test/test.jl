@@ -1,4 +1,4 @@
-include("../src/convex.jl")
+include("../src/SymbolicsDCP.jl")
 
 @syms x
 

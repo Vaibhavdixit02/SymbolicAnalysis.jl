@@ -5,6 +5,8 @@ using DomainSets
 using LinearAlgebra
 using LogExpFunctions
 using StatsBase
+using Distributions
+using DSP
 
 import Symbolics: Symbolic, issym, istree
 using Symbolics.Rewriters
@@ -81,26 +83,6 @@ hasdcprule(f::Function) = haskey(dcprules_dict, f)
 hasdcprule(f) = false
 dcprule(f, args...) = dcprules_dict[f]
 
-### DCP atom rules
-
-# special cases which depend on arguments:
-function dcprule(::typeof(^), x::Symbolic, i)
-    if isone(i)
-        return makerule(ℝ, Positive, Vex, Increasing)
-    elseif isinteger(i) && iseven(i)
-        return makerule(ℝ, Positive, Vex, increasing_if_positive)
-    elseif isinteger(i) && isodd(i)
-        return makerule(ℝ, Positive, Vex, Increasing)
-    elseif i >= 1
-        return makerule(HalfLine(), Positive, Vex, Increasing)
-    elseif i >= 0 && i < 1
-        return makerule(HalfLine(), Positive, Cave, Increasing)
-    elseif i < 0
-        return makerule(HalfLine{Float64, :closed}(), Positive, Cave, Increasing)
-    end
-end
-hasdcprule(::typeof(^)) = true
-
 # add_dcprule(+, ℝ, AnySign, Affine, Increasing)
 
 # function dcprule(::typeof(-), x, y)
@@ -127,7 +109,6 @@ hasdcprule(::typeof(^)) = true
 
 
 ### Sign ###
-#
 setsign(ex::Symbolic, sign) = setmetadata(ex, Sign, sign)
 setsign(ex, sign) = ex
 getsign(ex::Symbolic) = getmetadata(ex, Sign)

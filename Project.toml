@@ -1,4 +1,6 @@
 [deps]
+DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 DomainSets = "5b8099bc-c8ec-5219-889f-1d9e522a28bf"
 IfElse = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
 LogExpFunctions = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
