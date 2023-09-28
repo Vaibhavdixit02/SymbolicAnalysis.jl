@@ -1,26 +1,50 @@
 ### DCP atom rules
 
+# add_dcprule(+, ℝ, AnySign, Affine, Increasing)
+
+# function dcprule(::typeof(-), x, y)
+#     if y >= 0
+#         if x >= 0 && x >= y 
+#             return makerule((HalfLine(), HalfLine()), Positive, Affine, (Increasing, Decreasing))
+#         elseif x >= 0 && x < y
+#             return makerule((HalfLine(), HalfLine()), Negative, Affine, (Increasing, Decreasing))
+#         elseif x < 0+
+#             return makerule((NegativeHalfLine(), HalfLine()), Negative, Affine, (Increasing, Decreasing))
+#         end
+#     elseif y < 0
+#         if x >= 0
+#             return makerule((HalfLine(), NegativeHalfLine()), Positive, Affine, (Increasing, Decreasing))
+#         else
+#             if x >= y
+#                 return makerule((NegativeHalfLine(), NegativeHalfLine()), Positive, Affine, (Increasing, Decreasing))
+#             else
+#                 return makerule((NegativeHalfLine(), NegativeHalfLine()), Negative, Affine, (Increasing, Decreasing))
+#             end
+#         end
+#     end
+# end
+
 add_dcprule(dot, (array_domain(ℝ), array_domain(ℝ)), AnySign, Affine, Increasing)
 
-function dotsort(x::Vector, y::Vector)
+function dotsort(x::AbstractVector, y::AbstractVector)
     if length(x) != length(y)
-        throw(DimensionMismatch("Vectors must have same length"))
+        throw(DimensionMismatch("AbstractVectors must have same length"))
     end
     dot(sort.(x, y))
 end
-Symbolics.@register_symbolic dotsort(x::Vector, y::Vector)
+Symbolics.@register_symbolic dotsort(x::AbstractVector, y::AbstractVector)
 add_dcprule(dotsort, (array_domain(ℝ,1), array_domain(ℝ,1)), AnySign, Vex, (AnyMono, increasing_if_positive ∘ minimum))
 
 add_dcprule(StatsBase.geomean, array_domain(HalfLine{Number, :open}(),1), Positive, Cave, Increasing)
 add_dcprule(StatsBase.harmmean, array_domain(HalfLine{Number, :open}(),1), Positive, Cave, Increasing)
 
-function invprod(x::Vector)
+function invprod(x::AbstractVector)
     if any(iszero(x))
         throw(DivideError())
     end
     inv(prod(x))
 end
-Symbolics.@register_symbolic invprod(x::Vector)
+Symbolics.@register_symbolic invprod(x::AbstractVector)
 
 add_dcprule(invprod, array_domain(HalfLine{Number, :open}()), Positive, Vex, Decreasing)
 
@@ -50,14 +74,14 @@ add_dcprule(logdet, semidefinite_domain(), AnySign, Cave, AnyMono)
 
 add_dcprule(LogExpFunctions.logsumexp, array_domain(ℝ,2), AnySign, Vex, Increasing)
 
-function matrix_frac(x::Vector, P::Matrix)
+function AbstractMatrix_frac(x::AbstractVector, P::AbstractMatrix)
     if length(x) != size(P, 1)
         throw(DimensionMismatch("x and P must have same length"))
     end
     return x' * P * x
 end
-Symbolics.@register_symbolic matrix_frac(x::Vector, P::Matrix)
-add_dcprule(matrix_frac, (array_domain(ℝ,1), definite_domain()), AnySign, Vex, AnyMono)
+Symbolics.@register_symbolic AbstractMatrix_frac(x::AbstractVector, P::AbstractMatrix)
+add_dcprule(AbstractMatrix_frac, (array_domain(ℝ,1), definite_domain()), AnySign, Vex, AnyMono)
 
 add_dcprule(maximum, array_domain(ℝ), AnySign, Vex, Increasing)
 
@@ -79,55 +103,55 @@ end
 Symbolics.@register_symbolic perspective(f::Function, x, s::Number)
 add_dcprule(perspective, (function_domain(), ℝ, Positive), getsign, getcurvature, AnyMono)
 
-function quad_form(x::Vector, P::Matrix)
+function quad_form(x::AbstractVector, P::AbstractMatrix)
     if length(x) != size(P, 1)
         throw(DimensionMismatch("x and P must have same length"))
     end
     return x' * P * x
 end
-Symbolics.@register_symbolic quad_form(x::Vector, P::Matrix)
+Symbolics.@register_symbolic quad_form(x::AbstractVector, P::AbstractMatrix)
 add_dcprule(quad_form, (array_domain(ℝ,1), semidefinite_domain()), Positive, Vex, increasing_if_positive)
 add_dcprule(quad_form, (array_domain(ℝ,1), negsemidefinite_domain()), Negative, Cave, increasing_if_positive ∘ -)
 
-function quad_over_lin(x::Matrix, y::Number)
+function quad_over_lin(x::AbstractMatrix, y::Number)
     if y < 0
         throw(DomainError(y, "y must be positive"))
     end
     return sum(x.^2) / y
 end
 
-Symbolics.@register_symbolic quad_over_lin(x::Matrix, y::Number)
+Symbolics.@register_symbolic quad_over_lin(x::AbstractMatrix, y::Number)
 add_dcprule(quad_over_lin, (array_domain(ℝ,2), HalfLine{Number, :open}()), Positive, Vex, (increasing_if_positive, Decreasing))
 
 add_dcprule(sum, array_domain(ℝ, 2), AnySign, Affine, Increasing)
 
-function sum_largest(x::Matrix, k::Integer)
+function sum_largest(x::AbstractMatrix, k::Integer)
     return sum(sort(vec(x))[end-k:end])
 end
-Symbolics.@register_symbolic sum_largest(x::Matrix, k::Integer)
+Symbolics.@register_symbolic sum_largest(x::AbstractMatrix, k::Integer)
 add_dcprule(sum_largest, (array_domain(ℝ,2), ℤ), AnySign, Vex, Increasing)
 
-function sum_smallest(x::Matrix, k::Integer)
+function sum_smallest(x::AbstractMatrix, k::Integer)
     return sum(sort(vec(x))[1:k])
 end
-Symbolics.@register_symbolic sum_smallest(x::Matrix, k::Integer)
+Symbolics.@register_symbolic sum_smallest(x::AbstractMatrix, k::Integer)
 add_dcprule(sum_smallest, (array_domain(ℝ,2), ℤ), AnySign, Cave, Increasing)
 
 add_dcprule(tr, array_domain(ℝ, 2), AnySign, Affine, Increasing)
 
-function trinv(x::Matrix)
+function trinv(x::AbstractMatrix)
     return tr(inv(x))
 end
-Symbolics.@register_symbolic trinv(x::Matrix)
+Symbolics.@register_symbolic trinv(x::AbstractMatrix)
 add_dcprule(trinv, definite_domain(), Positive, Vex, AnyMono)
 
-function tv(x::Vector{<:Number})
+function tv(x::AbstractVector{<:Number})
     return sum(abs.(x[2:end] - x[1:end-1]))
 end
-Symbolics.@register_symbolic tv(x::Vector{<:Number})
+Symbolics.@register_symbolic tv(x::AbstractVector{<:Number})
 add_dcprule(tv, array_domain(ℝ,1), Positive, Vex, AnyMono)
 
-function tv(x::Vector{<:Matrix})
+function tv(x::AbstractVector{<:AbstractMatrix})
     return sum(
         map(1:size(x, 1)-1) do i
             map(1:size(x, 2)-1) do j
@@ -136,7 +160,7 @@ function tv(x::Vector{<:Matrix})
         end
         )
 end
-Symbolics.@register_symbolic tv(x::Vector{<:Matrix})
+Symbolics.@register_symbolic tv(x::AbstractVector{<:AbstractMatrix})
 add_dcprule(tv, array_domain(array_domain(ℝ,2), 1), Positive, Vex, AnyMono)
 
 add_dcprule(abs, ℂ, Positive, Vex, increasing_if_positive)

@@ -83,31 +83,6 @@ hasdcprule(f::Function) = haskey(dcprules_dict, f)
 hasdcprule(f) = false
 dcprule(f, args...) = dcprules_dict[f]
 
-# add_dcprule(+, ℝ, AnySign, Affine, Increasing)
-
-# function dcprule(::typeof(-), x, y)
-#     if y >= 0
-#         if x >= 0 && x >= y 
-#             return makerule((HalfLine(), HalfLine()), Positive, Affine, (Increasing, Decreasing))
-#         elseif x >= 0 && x < y
-#             return makerule((HalfLine(), HalfLine()), Negative, Affine, (Increasing, Decreasing))
-#         elseif x < 0+
-#             return makerule((NegativeHalfLine(), HalfLine()), Negative, Affine, (Increasing, Decreasing))
-#         end
-#     elseif y < 0
-#         if x >= 0
-#             return makerule((HalfLine(), NegativeHalfLine()), Positive, Affine, (Increasing, Decreasing))
-#         else
-#             if x >= y
-#                 return makerule((NegativeHalfLine(), NegativeHalfLine()), Positive, Affine, (Increasing, Decreasing))
-#             else
-#                 return makerule((NegativeHalfLine(), NegativeHalfLine()), Negative, Affine, (Increasing, Decreasing))
-#             end
-#         end
-#     end
-# end
-
-
 ### Sign ###
 setsign(ex::Symbolic, sign) = setmetadata(ex, Sign, sign)
 setsign(ex, sign) = ex
@@ -268,4 +243,5 @@ end
 
 include("rules.jl")
 
+export propagate_curvature, propagate_sign, getcurvature, getsign
 end
