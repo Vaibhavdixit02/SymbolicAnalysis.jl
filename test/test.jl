@@ -1,5 +1,4 @@
-include("../src/SymbolicsDCP.jl")
-
+using SymbolicsDCP: xlogx
 @syms x
 
 ex = -1*xlogx(x)

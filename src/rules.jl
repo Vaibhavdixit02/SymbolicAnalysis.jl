@@ -137,6 +137,9 @@ end
 Symbolics.@register_symbolic sum_smallest(x::AbstractMatrix, k::Integer)
 add_dcprule(sum_smallest, (array_domain(ℝ,2), ℤ), AnySign, Cave, Increasing)
 
+Symbolics.@register_symbolic sum_smallest(x::AbstractArray, k::Integer)
+add_dcprule(sum_smallest, (array_domain(ℝ,2), ℤ), AnySign, Cave, Increasing)
+
 add_dcprule(tr, array_domain(ℝ, 2), AnySign, Affine, Increasing)
 
 function trinv(x::AbstractMatrix)
