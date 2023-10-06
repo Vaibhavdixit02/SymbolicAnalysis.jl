@@ -8,7 +8,7 @@ using StatsBase
 using Distributions
 using DSP
 
-import Symbolics: Symbolic, issym, istree
+import Symbolics: Symbolic, issym, istree, Term
 using Symbolics.Rewriters
 
 using SymbolicUtils
@@ -81,13 +81,13 @@ makerule(domain, sign, curvature, monotonicity) = (domain=domain,
 
 hasdcprule(f::Function) = haskey(dcprules_dict, f)
 hasdcprule(f) = false
-dcprule(f, args...) = dcprules_dict[f]
+dcprule(f, args...) = dcprules_dict[f], args
 
 ### Sign ###
 setsign(ex::Symbolic, sign) = setmetadata(ex, Sign, sign)
 setsign(ex, sign) = ex
 getsign(ex::Symbolic) = getmetadata(ex, Sign)
-getsign(ex) = ex < 0 ? Negative : Positive
+getsign(ex::Number) = ex < 0 ? Negative : Positive
 hassign(ex::Symbolic) = hasmetadata(ex, Sign)
 hassign(ex) = ex isa Real
 
@@ -122,16 +122,17 @@ function propagate_sign(ex)
 
     # Step 2: set the sign of primitve functions
     r = @rule ~x::istree  =>
-    setsign(~x, (dcprule(operation(~x), arguments(~x)...).sign)) where
+    setsign(~x, (dcprule(operation(~x), arguments(~x)...)[1].sign)) where
         {hasdcprule(operation(~x))}
-
+    SymbolicUtils.inspect(ex)
     ex = Postwalk(PassThrough(r))(ex)
-
+    SymbolicUtils.inspect(ex)
     # Step 3: propagate the sign to top level
     rs = [@rule *(~~x) => setsign(~MATCH, mul_sign(~~x))
           @rule +(~~x) => setsign(~MATCH, add_sign(~~x))]
-
-    Postwalk(Chain(rs))(ex)
+    ex = Postwalk(Chain(rs))(ex)
+    SymbolicUtils.inspect(ex)
+    ex
 end
 
 ### Curvature ###
@@ -172,6 +173,7 @@ end
 function propagate_curvature(ex)
     r = [@rule *(~~x) => setcurvature(~MATCH, mul_curvature(~~x))
          @rule +(~~x) => setcurvature(~MATCH, add_curvature(~~x))
+        #  @rule broadcast(~f, ~~x) => setcurvature(~MATCH, propagate_curvature(propagate_sign(Symbolics.scalarize((~MATCH)[1]))))
          @rule ~x => setcurvature(~x, find_curvature(~x))]
     Postwalk(RestartedChain(r))(ex)
 end
@@ -195,7 +197,7 @@ function find_curvature(ex)
 
     if istree(ex)
         f, args = operation(ex), arguments(ex)
-        rule = dcprule(f, args...)
+        rule, args = dcprule(f, args...)
         f_curvature = rule.curvature
         f_monotonicity = rule.monotonicity
 

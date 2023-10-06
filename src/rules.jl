@@ -24,6 +24,8 @@
 #     end
 # end
 
+add_dcprule(Base.Ref, ℝ, AnySign, Affine, Increasing)
+
 add_dcprule(dot, (array_domain(ℝ), array_domain(ℝ)), AnySign, Affine, Increasing)
 
 function dotsort(x::AbstractVector, y::AbstractVector)
@@ -113,15 +115,15 @@ Symbolics.@register_symbolic quad_form(x::AbstractVector, P::AbstractMatrix)
 add_dcprule(quad_form, (array_domain(ℝ,1), semidefinite_domain()), Positive, Vex, increasing_if_positive)
 add_dcprule(quad_form, (array_domain(ℝ,1), negsemidefinite_domain()), Negative, Cave, increasing_if_positive ∘ -)
 
-function quad_over_lin(x::AbstractMatrix, y::Number)
+function quad_over_lin(x::AbstractArray, y::Number)
     if y < 0
         throw(DomainError(y, "y must be positive"))
     end
     return sum(x.^2) / y
 end
 
-Symbolics.@register_symbolic quad_over_lin(x::AbstractMatrix, y::Number)
-add_dcprule(quad_over_lin, (array_domain(ℝ,2), HalfLine{Number, :open}()), Positive, Vex, (increasing_if_positive, Decreasing))
+Symbolics.@register_symbolic quad_over_lin(x::AbstractArray, y::Number)
+add_dcprule(quad_over_lin, (array_domain(ℝ), HalfLine{Number, :open}()), Positive, Vex, (increasing_if_positive, Decreasing))
 
 add_dcprule(sum, array_domain(ℝ, 2), AnySign, Affine, Increasing)
 
@@ -134,8 +136,6 @@ add_dcprule(sum_largest, (array_domain(ℝ,2), ℤ), AnySign, Vex, Increasing)
 function sum_smallest(x::AbstractMatrix, k::Integer)
     return sum(sort(vec(x))[1:k])
 end
-Symbolics.@register_symbolic sum_smallest(x::AbstractMatrix, k::Integer)
-add_dcprule(sum_smallest, (array_domain(ℝ,2), ℤ), AnySign, Cave, Increasing)
 
 Symbolics.@register_symbolic sum_smallest(x::AbstractArray, k::Integer)
 add_dcprule(sum_smallest, (array_domain(ℝ,2), ℤ), AnySign, Cave, Increasing)
@@ -211,20 +211,23 @@ add_dcprule(min, (ℝ, ℝ), AnySign, Cave, Increasing)
 
 # special cases which depend on arguments:
 function dcprule(::typeof(^), x::Symbolic, i)
+    args = (x, i)
     if isone(i)
-        return makerule(ℝ, AnySign, Affine, Increasing)
+        return makerule(ℝ, AnySign, Affine, Increasing), args
     elseif isinteger(i) && iseven(i)
-        return makerule(ℝ, Positive, Vex, increasing_if_positive)
+        return makerule(ℝ, Positive, Vex, increasing_if_positive), args
     elseif isinteger(i) && isodd(i)
-        return makerule(HalfLine(), Positive, Vex, Increasing)
+        return makerule(HalfLine(), Positive, Vex, Increasing), args
     elseif i >= 1
-        return makerule(HalfLine(), Positive, Vex, Increasing)
+        return makerule(HalfLine(), Positive, Vex, Increasing), args
     elseif i > 0 && i < 1
-        return makerule(HalfLine(), Positive, Cave, Increasing)
+        return makerule(HalfLine(), Positive, Cave, Increasing), args
     elseif i < 0
-        return makerule(HalfLine{Float64, :closed}(), Positive, Vex, Increasing)
+        return makerule(HalfLine{Float64, :closed}(), Positive, Vex, Increasing), args
     end
 end
+dcprule(::typeof(Base.literal_pow), f, x...) = dcprule(^, x...)
+
 hasdcprule(::typeof(^)) = true
 
 add_dcprule(real, ℂ, AnySign, Affine, Increasing)
@@ -266,3 +269,10 @@ add_dcprule(triu, array_domain(ℝ, 2), AnySign, Affine, Increasing)
 add_dcprule(vec, array_domain(ℝ, 2), AnySign, Affine, Increasing)
 
 add_dcprule(vcat, array_domain(array_domain(ℝ,1), 1), AnySign, Affine, Increasing)
+
+function dcprule(::typeof(broadcast), f, x...)
+    return dcprule(f, x...)
+end
+hasdcprule(::typeof(broadcast)) = true
+
+# add_dcprule(broadcast, (function_domain, array_domain(ℝ)), AnySign, Affine, (AnyMono, AnyMono))
