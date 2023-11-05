@@ -7,6 +7,7 @@ using LogExpFunctions
 using StatsBase
 using Distributions
 using DSP
+import MathOptInterface as MOI
 
 import Symbolics: Symbolic, issym, istree, Term
 using Symbolics.Rewriters
@@ -68,16 +69,17 @@ end
 
 const dcprules_dict = Dict()
 
-function add_dcprule(f, domain, sign, curvature, monotonicity)
+function add_dcprule(f, domain, sign, curvature, monotonicity, cone)
     if !(monotonicity isa Tuple)
         monotonicity = (monotonicity,)
     end
-    dcprules_dict[f] = makerule(domain, sign, curvature, monotonicity)
+    dcprules_dict[f] = makerule(domain, sign, curvature, monotonicity, cone)
 end
-makerule(domain, sign, curvature, monotonicity) = (domain=domain,
+makerule(domain, sign, curvature, monotonicity, cone) = (domain=domain,
                 sign=sign,
                 curvature=curvature,
-                monotonicity=monotonicity)
+                monotonicity=monotonicity,
+                cone=cone,)
 
 hasdcprule(f::Function) = haskey(dcprules_dict, f)
 hasdcprule(f) = false

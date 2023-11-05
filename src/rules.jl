@@ -1,5 +1,9 @@
 ### DCP atom rules
 
+struct SDP end
+
+struct ExpSDP end
+
 # add_dcprule(+, ℝ, AnySign, Affine, Increasing)
 
 # function dcprule(::typeof(-), x, y)
@@ -24,9 +28,9 @@
 #     end
 # end
 
-add_dcprule(Base.Ref, ℝ, AnySign, Affine, Increasing)
+add_dcprule(Base.Ref, ℝ, AnySign, Affine, Increasing, MOI.Reals)
 
-add_dcprule(dot, (array_domain(ℝ), array_domain(ℝ)), AnySign, Affine, Increasing)
+add_dcprule(dot, (array_domain(ℝ), array_domain(ℝ)), AnySign, Affine, Increasing, MOI.Reals)
 
 function dotsort(x::AbstractVector, y::AbstractVector)
     if length(x) != length(y)
@@ -35,24 +39,24 @@ function dotsort(x::AbstractVector, y::AbstractVector)
     dot(sort.(x, y))
 end
 Symbolics.@register_symbolic dotsort(x::AbstractVector, y::AbstractVector)
-add_dcprule(dotsort, (array_domain(ℝ,1), array_domain(ℝ,1)), AnySign, Vex, (AnyMono, increasing_if_positive ∘ minimum))
+add_dcprule(dotsort, (array_domain(ℝ,1), array_domain(ℝ,1)), AnySign, Vex, (AnyMono, increasing_if_positive ∘ minimum), MOI.Reals)
 
-add_dcprule(StatsBase.geomean, array_domain(HalfLine{Number, :open}(),1), Positive, Cave, Increasing)
-add_dcprule(StatsBase.harmmean, array_domain(HalfLine{Number, :open}(),1), Positive, Cave, Increasing)
+add_dcprule(StatsBase.geomean, array_domain(HalfLine{Number, :open}(),1), Positive, Cave, Increasing, MOI.GeometricMeanCone)
+add_dcprule(StatsBase.harmmean, array_domain(HalfLine{Number, :open}(),1), Positive, Cave, Increasing, MOI.SecondOrderCone) ##maybe wrong cone
 
-function invprod(x::AbstractVector)
-    if any(iszero(x))
-        throw(DivideError())
-    end
-    inv(prod(x))
-end
-Symbolics.@register_symbolic invprod(x::AbstractVector)
+# function invprod(x::AbstractVector)
+#     if any(iszero(x))
+#         throw(DivideError())
+#     end
+#     inv(prod(x))
+# end
+# Symbolics.@register_symbolic invprod(x::AbstractVector)
 
-add_dcprule(invprod, array_domain(HalfLine{Number, :open}()), Positive, Vex, Decreasing)
+# add_dcprule(invprod, array_domain(HalfLine{Number, :open}()), Positive, Vex, Decreasing, )
 
-add_dcprule(eigmax, symmetric_domain(), AnySign, Vex, AnyMono)
+add_dcprule(eigmax, symmetric_domain(), AnySign, Vex, AnyMono, SDP)
 
-add_dcprule(eigmin, symmetric_domain(), AnySign, Cave, AnyMono)
+add_dcprule(eigmin, symmetric_domain(), AnySign, Cave, AnyMono, SDP)
 
 function eigsummax(m::Symmetric, k::Int)
     if k < 1 || k > size(m, 1)
@@ -61,7 +65,7 @@ function eigsummax(m::Symmetric, k::Int)
     sum(eigvals(m)[end-k+1:end])
 end
 Symbolics.@register_symbolic eigsummax(m::Symmetric, k::Int)
-add_dcprule(eigsummax, (array_domain(ℝ, 2), ℝ), AnySign, Vex, AnyMono)
+add_dcprule(eigsummax, (array_domain(ℝ, 2), ℝ), AnySign, Vex, AnyMono, SDP)
 
 function eigsummin(m::Symmetric, k::Int)
     if k < 1 || k > size(m, 1)
@@ -70,28 +74,28 @@ function eigsummin(m::Symmetric, k::Int)
     sum(eigvals(m)[1:k])
 end
 Symbolics.@register_symbolic eigsummin(m::Symmetric, k::Int)
-add_dcprule(eigsummin, (array_domain(ℝ, 2), ℝ), AnySign, Cave, AnyMono)
+add_dcprule(eigsummin, (array_domain(ℝ, 2), ℝ), AnySign, Cave, AnyMono, SDP)
 
-add_dcprule(logdet, semidefinite_domain(), AnySign, Cave, AnyMono)
+add_dcprule(logdet, semidefinite_domain(), AnySign, Cave, AnyMono, ExpSDP)
 
-add_dcprule(LogExpFunctions.logsumexp, array_domain(ℝ,2), AnySign, Vex, Increasing)
+add_dcprule(LogExpFunctions.logsumexp, array_domain(ℝ,2), AnySign, Vex, Increasing, MOI.ExponentialCone)
 
-function AbstractMatrix_frac(x::AbstractVector, P::AbstractMatrix)
+function matrix_frac(x::AbstractVector, P::AbstractMatrix)
     if length(x) != size(P, 1)
         throw(DimensionMismatch("x and P must have same length"))
     end
-    return x' * P * x
+    return x' * inv(P) * x
 end
-Symbolics.@register_symbolic AbstractMatrix_frac(x::AbstractVector, P::AbstractMatrix)
-add_dcprule(AbstractMatrix_frac, (array_domain(ℝ,1), definite_domain()), AnySign, Vex, AnyMono)
+Symbolics.@register_symbolic matrix_frac(x::AbstractVector, P::AbstractMatrix)
+add_dcprule(matrix_frac, (array_domain(ℝ,1), definite_domain()), AnySign, Vex, AnyMono, SDP)
 
-add_dcprule(maximum, array_domain(ℝ), AnySign, Vex, Increasing)
+add_dcprule(maximum, array_domain(ℝ), AnySign, Vex, Increasing, MOI.Reals)
 
-add_dcprule(minimum, array_domain(ℝ), AnySign, Cave, Increasing)
+add_dcprule(minimum, array_domain(ℝ), AnySign, Cave, Increasing, MOI.Reals)
 
 #incorrect for p<1
-add_dcprule(norm, (array_domain(ℝ), Interval{:closed, :open}(1, Inf)), Positive, Vex, increasing_if_positive)
-add_dcprule(norm, (array_domain(ℝ), Interval{:closed, :open}(0, 1)), Positive, Vex, increasing_if_positive)
+add_dcprule(norm, (array_domain(ℝ), Interval{:closed, :open}(1, Inf)), Positive, Vex, increasing_if_positive, MOI.NormCone)
+add_dcprule(norm, (array_domain(ℝ), Interval{:closed, :open}(0, 1)), Positive, Vex, increasing_if_positive, MOI.NormCone)
 
 function perspective(f::Function, x, s::Number)
     if s < 0
@@ -103,7 +107,8 @@ function perspective(f::Function, x, s::Number)
     s * f(x / s)
 end
 Symbolics.@register_symbolic perspective(f::Function, x, s::Number)
-add_dcprule(perspective, (function_domain(), ℝ, Positive), getsign, getcurvature, AnyMono)
+function getcone() end
+add_dcprule(perspective, (function_domain(), ℝ, Positive), getsign, getcurvature, AnyMono, getcone)
 
 function quad_form(x::AbstractVector, P::AbstractMatrix)
     if length(x) != size(P, 1)
@@ -112,33 +117,31 @@ function quad_form(x::AbstractVector, P::AbstractMatrix)
     return x' * P * x
 end
 Symbolics.@register_symbolic quad_form(x::AbstractVector, P::AbstractMatrix)
-add_dcprule(quad_form, (array_domain(ℝ,1), semidefinite_domain()), Positive, Vex, increasing_if_positive)
-add_dcprule(quad_form, (array_domain(ℝ,1), negsemidefinite_domain()), Negative, Cave, increasing_if_positive ∘ -)
+add_dcprule(quad_form, (array_domain(ℝ,1), semidefinite_domain()), Positive, Vex, increasing_if_positive, MOI.SecondOrderCone)
+add_dcprule(quad_form, (array_domain(ℝ,1), negsemidefinite_domain()), Negative, Cave, increasing_if_positive ∘ -, MOI.SecondOrderCone)
 
-function quad_over_lin(x::AbstractArray, y::Number)
-    if y < 0
-        throw(DomainError(y, "y must be positive"))
-    end
+function quad_over_lin(x::Union{Number, AbstractArray}, y::Number)
     return sum(x.^2) / y
 end
 
-Symbolics.@register_symbolic quad_over_lin(x::AbstractArray, y::Number)
-add_dcprule(quad_over_lin, (array_domain(ℝ), HalfLine{Number, :open}()), Positive, Vex, (increasing_if_positive, Decreasing))
+Symbolics.@register_symbolic quad_over_lin(x::Union{Number, AbstractArray}, y::Number)
+add_dcprule(quad_over_lin, (array_domain(ℝ), HalfLine{Number, :open}()), Positive, Vex, (increasing_if_positive, Decreasing), MOI.SecondOrderCone)
 
-add_dcprule(sum, array_domain(ℝ, 2), AnySign, Affine, Increasing)
+
+add_dcprule(sum, array_domain(ℝ, 2), AnySign, Affine, Increasing, MOI.Reals)
 
 function sum_largest(x::AbstractMatrix, k::Integer)
     return sum(sort(vec(x))[end-k:end])
 end
 Symbolics.@register_symbolic sum_largest(x::AbstractMatrix, k::Integer)
-add_dcprule(sum_largest, (array_domain(ℝ,2), ℤ), AnySign, Vex, Increasing)
+add_dcprule(sum_largest, (array_domain(ℝ,2), ℤ), AnySign, Vex, Increasing, MOI.Reals)
 
 function sum_smallest(x::AbstractMatrix, k::Integer)
     return sum(sort(vec(x))[1:k])
 end
 
 Symbolics.@register_symbolic sum_smallest(x::AbstractArray, k::Integer)
-add_dcprule(sum_smallest, (array_domain(ℝ,2), ℤ), AnySign, Cave, Increasing)
+add_dcprule(sum_smallest, (array_domain(ℝ,2), ℤ), AnySign, Cave, Increasing, MOI.Reals)
 
 add_dcprule(tr, array_domain(ℝ, 2), AnySign, Affine, Increasing)
 
@@ -229,6 +232,8 @@ end
 dcprule(::typeof(Base.literal_pow), f, x...) = dcprule(^, x...)
 
 hasdcprule(::typeof(^)) = true
+
+add_dcprule(sqrt, HalfLine(), Positive, Cave, Increasing)
 
 add_dcprule(real, ℂ, AnySign, Affine, Increasing)
 
