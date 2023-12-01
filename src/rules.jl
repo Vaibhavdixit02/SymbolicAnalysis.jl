@@ -143,19 +143,20 @@ end
 Symbolics.@register_symbolic sum_smallest(x::AbstractArray, k::Integer)
 add_dcprule(sum_smallest, (array_domain(ℝ,2), ℤ), AnySign, Cave, Increasing, MOI.Reals)
 
-add_dcprule(tr, array_domain(ℝ, 2), AnySign, Affine, Increasing)
+################################################################
+add_dcprule(tr, array_domain(ℝ, 2), AnySign, Affine, Increasing, MOI.Reals)
 
 function trinv(x::AbstractMatrix)
     return tr(inv(x))
 end
 Symbolics.@register_symbolic trinv(x::AbstractMatrix)
-add_dcprule(trinv, definite_domain(), Positive, Vex, AnyMono)
+add_dcprule(trinv, definite_domain(), Positive, Vex, AnyMono, MOI.Reals)
 
 function tv(x::AbstractVector{<:Number})
     return sum(abs.(x[2:end] - x[1:end-1]))
 end
 Symbolics.@register_symbolic tv(x::AbstractVector{<:Number})
-add_dcprule(tv, array_domain(ℝ,1), Positive, Vex, AnyMono)
+add_dcprule(tv, array_domain(ℝ,1), Positive, Vex, AnyMono, MOI.Reals)
 
 function tv(x::AbstractVector{<:AbstractMatrix})
     return sum(
@@ -167,16 +168,16 @@ function tv(x::AbstractVector{<:AbstractMatrix})
         )
 end
 Symbolics.@register_symbolic tv(x::AbstractVector{<:AbstractMatrix})
-add_dcprule(tv, array_domain(array_domain(ℝ,2), 1), Positive, Vex, AnyMono)
+add_dcprule(tv, array_domain(array_domain(ℝ,2), 1), Positive, Vex, AnyMono, MOI.Reals)
 
-add_dcprule(abs, ℂ, Positive, Vex, increasing_if_positive)
+add_dcprule(abs, ℂ, Positive, Vex, increasing_if_positive, MOI.Reals)
 
-add_dcprule(conj, ℂ, AnySign, Affine, AnyMono)
+add_dcprule(conj, ℂ, AnySign, Affine, AnyMono, MOI.Reals)
 
-add_dcprule(exp, ℝ, Positive, Vex, Increasing)
+add_dcprule(exp, ℝ, Positive, Vex, Increasing, MOI.Reals)
 
 Symbolics.@register_symbolic LogExpFunctions.xlogx(x::Number)
-add_dcprule(xlogx, ℝ, AnySign, Vex, AnyMono)
+add_dcprule(xlogx, ℝ, AnySign, Vex, AnyMono, MOI.Reals)
 
 function huber(x::Number, M::Number = 1)
     if M < 0
@@ -190,52 +191,52 @@ function huber(x::Number, M::Number = 1)
     end
 end
 Symbolics.@register_symbolic huber(x::Number, M::Number)
-add_dcprule(huber, (ℝ, HalfLine()), Positive, Vex, increasing_if_positive)
+add_dcprule(huber, (ℝ, HalfLine()), Positive, Vex, increasing_if_positive, MOI.Reals)
 
-add_dcprule(imag, ℂ, AnySign, Affine, AnyMono)
+add_dcprule(imag, ℂ, AnySign, Affine, AnyMono, MOI.Reals)
 
-add_dcprule(inv, HalfLine{Number, :open}(), Positive, Vex, Decreasing)
-add_dcprule(log, HalfLine{Number, :open}(), AnySign, Cave, Increasing)
+add_dcprule(inv, HalfLine{Number, :open}(), Positive, Vex, Decreasing, MOI.Reals)
+add_dcprule(log, HalfLine{Number, :open}(), AnySign, Cave, Increasing, MOI.Reals)
 
-add_dcprule(kldivergence, (array_domain(HalfLine{Number, :open},1), array_domain(HalfLine{Number, :open},1)), Positive, Vex, AnyMono)
+add_dcprule(kldivergence, (array_domain(HalfLine{Number, :open},1), array_domain(HalfLine{Number, :open},1)), Positive, Vex, AnyMono, MOI.Reals)
 
 function lognormcdf(x::Number)
     return logcdf(Normal, x)
 end
 Symbolics.@register_symbolic lognormcdf(x::Number)
-add_dcprule(lognormcdf, ℝ, Negative, Cave, Increasing)
+add_dcprule(lognormcdf, ℝ, Negative, Cave, Increasing, MOI.Reals)
 
-add_dcprule(log1p, Interval{:open, :open}(-1, Inf), Negative, Cave, Increasing)
+add_dcprule(log1p, Interval{:open, :open}(-1, Inf), Negative, Cave, Increasing, MOI.Reals)
 
-add_dcprule(logistic, ℝ, Positive, Vex, Increasing)
+add_dcprule(logistic, ℝ, Positive, Vex, Increasing, MOI.Reals)
 
-add_dcprule(max, (ℝ, ℝ), AnySign, Vex, Increasing)
-add_dcprule(min, (ℝ, ℝ), AnySign, Cave, Increasing)
+add_dcprule(max, (ℝ, ℝ), AnySign, Vex, Increasing, MOI.Reals)
+add_dcprule(min, (ℝ, ℝ), AnySign, Cave, Increasing, MOI.Reals)
 
 # special cases which depend on arguments:
 function dcprule(::typeof(^), x::Symbolic, i)
     args = (x, i)
     if isone(i)
-        return makerule(ℝ, AnySign, Affine, Increasing), args
+        return makerule(ℝ, AnySign, Affine, Increasing, MOI.Reals), args
     elseif isinteger(i) && iseven(i)
-        return makerule(ℝ, Positive, Vex, increasing_if_positive), args
+        return makerule(ℝ, Positive, Vex, increasing_if_positive, MOI.Reals), args
     elseif isinteger(i) && isodd(i)
-        return makerule(HalfLine(), Positive, Vex, Increasing), args
+        return makerule(HalfLine(), Positive, Vex, Increasing, MOI.Reals), args
     elseif i >= 1
-        return makerule(HalfLine(), Positive, Vex, Increasing), args
+        return makerule(HalfLine(), Positive, Vex, Increasing, MOI.Reals), args
     elseif i > 0 && i < 1
-        return makerule(HalfLine(), Positive, Cave, Increasing), args
+        return makerule(HalfLine(), Positive, Cave, Increasing, MOI.Reals), args
     elseif i < 0
-        return makerule(HalfLine{Float64, :closed}(), Positive, Vex, Increasing), args
+        return makerule(HalfLine{Float64, :closed}(), Positive, Vex, Increasing, MOI.Reals), args
     end
 end
 dcprule(::typeof(Base.literal_pow), f, x...) = dcprule(^, x...)
 
 hasdcprule(::typeof(^)) = true
 
-add_dcprule(sqrt, HalfLine(), Positive, Cave, Increasing)
+add_dcprule(sqrt, HalfLine(), Positive, Cave, Increasing, MOI.Reals)
 
-add_dcprule(real, ℂ, AnySign, Affine, Increasing)
+add_dcprule(real, ℂ, AnySign, Affine, Increasing, MOI.Reals)
 
 function rel_entr(x::Number, y::Number)
     if x < 0 || y < 0
@@ -247,33 +248,33 @@ function rel_entr(x::Number, y::Number)
     x * log(x / y)
 end
 Symbolics.@register_symbolic rel_entr(x::Number, y::Number)
-add_dcprule(rel_entr, (HalfLine{Number, :open}(), HalfLine{Number, :open}()), AnySign, Vex, (AnyMono, Decreasing))
+add_dcprule(rel_entr, (HalfLine{Number, :open}(), HalfLine{Number, :open}()), AnySign, Vex, (AnyMono, Decreasing), MOI.Reals)
 
-add_dcprule(sqrt, HalfLine(), Positive, Cave, Increasing)
+add_dcprule(sqrt, HalfLine(), Positive, Cave, Increasing, MOI.Reals)
 
-add_dcprule(xexpx, HalfLine, Positive, Vex, Increasing)
+add_dcprule(xexpx, HalfLine, Positive, Vex, Increasing, MOI.Reals)
 
-add_dcprule(conv, (array_domain(ℝ,1), array_domain(ℝ,1)), AnySign, Affine, AnyMono)
+add_dcprule(conv, (array_domain(ℝ,1), array_domain(ℝ,1)), AnySign, Affine, AnyMono, MOI.Reals)
 
-add_dcprule(cumsum, array_domain(ℝ), AnySign, Affine, Increasing)
+add_dcprule(cumsum, array_domain(ℝ), AnySign, Affine, Increasing, MOI.Reals)
 
-add_dcprule(diagm, array_domain(ℝ,1), AnySign, Affine, Increasing)
+add_dcprule(diagm, array_domain(ℝ,1), AnySign, Affine, Increasing, MOI.Reals)
 
-add_dcprule(diag, array_domain(ℝ,2), AnySign, Affine, Increasing)
+add_dcprule(diag, array_domain(ℝ,2), AnySign, Affine, Increasing, MOI.Reals)
 
-add_dcprule(diff, array_domain(ℝ), AnySign, Affine, Increasing)
+add_dcprule(diff, array_domain(ℝ), AnySign, Affine, Increasing, MOI.Reals)
 
-add_dcprule(hcat, array_domain(array_domain(ℝ,1), 1), AnySign, Affine, Increasing)
+add_dcprule(hcat, array_domain(array_domain(ℝ,1), 1), AnySign, Affine, Increasing, MOI.Reals)
 
-add_dcprule(kron, (array_domain(ℝ,2), array_domain(ℝ,2)), AnySign, Affine, Increasing)
+add_dcprule(kron, (array_domain(ℝ,2), array_domain(ℝ,2)), AnySign, Affine, Increasing, MOI.Reals)
 
-add_dcprule(reshape, array_domain(ℝ, 2), AnySign, Affine, Increasing)
+add_dcprule(reshape, array_domain(ℝ, 2), AnySign, Affine, Increasing, MOI.Reals)
 
-add_dcprule(triu, array_domain(ℝ, 2), AnySign, Affine, Increasing)
+add_dcprule(triu, array_domain(ℝ, 2), AnySign, Affine, Increasing, MOI.Reals)
 
-add_dcprule(vec, array_domain(ℝ, 2), AnySign, Affine, Increasing)
+add_dcprule(vec, array_domain(ℝ, 2), AnySign, Affine, Increasing, MOI.Reals)
 
-add_dcprule(vcat, array_domain(array_domain(ℝ,1), 1), AnySign, Affine, Increasing)
+add_dcprule(vcat, array_domain(array_domain(ℝ,1), 1), AnySign, Affine, Increasing, MOI.Reals)
 
 function dcprule(::typeof(broadcast), f, x...)
     return dcprule(f, x...)

@@ -126,14 +126,14 @@ function propagate_sign(ex)
     r = @rule ~x::istree  =>
     setsign(~x, (dcprule(operation(~x), arguments(~x)...)[1].sign)) where
         {hasdcprule(operation(~x))}
-    SymbolicUtils.inspect(ex)
+    # SymbolicUtils.inspect(ex)
     ex = Postwalk(PassThrough(r))(ex)
-    SymbolicUtils.inspect(ex)
+    # SymbolicUtils.inspect(ex)
     # Step 3: propagate the sign to top level
     rs = [@rule *(~~x) => setsign(~MATCH, mul_sign(~~x))
           @rule +(~~x) => setsign(~MATCH, add_sign(~~x))]
     ex = Postwalk(Chain(rs))(ex)
-    SymbolicUtils.inspect(ex)
+    # SymbolicUtils.inspect(ex)
     ex
 end
 
