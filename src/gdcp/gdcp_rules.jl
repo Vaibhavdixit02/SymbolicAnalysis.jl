@@ -1,0 +1,117 @@
+using Manifolds
+using Symbolics: @register_symbolic, unwrap
+using LinearAlgebra
+
+@enum GSign GPositive GNegative GAnySign
+@enum GCurvature GVex GCave GLinear GUnknownCurvature
+@enum GMonotonicity GIncreasing GDecreasing GAnyMono
+
+const gdcprules_dict = Dict()
+
+function add_gdcprule(f, manifold, sign, curvature, monotonicity)
+    if !(monotonicity isa Tuple)
+        monotonicity = (monotonicity,)
+    end
+    dcprules_dict[f] = makerule(manifold, sign, curvature, monotonicity)
+end
+makegrule(manifold, sign, curvature, monotonicity) = (manifold=manifold,
+                gsign=sign,
+                gcurvature=curvature,
+                gmonotonicity=monotonicity)
+
+hasgdcprule(f::Function) = haskey(gdcprules_dict, f)
+hasgdcprule(f) = false
+gdcprule(f, args...) = gdcprules_dict[f], args
+
+setgcurvature(ex::Symbolic, curv) = setmetadata(ex, GCurvature, curv)
+setgcurvature(ex, curv) = ex
+getgcurvature(ex::Symbolic) = getmetadata(ex, GCurvature)
+getgcurvature(ex) = GLinear
+hasgcurvature(ex::Symbolic) = hasmetadata(ex, GCurvature)
+hasgcurvature(ex) = ex isa Real
+
+# function mul_gcurvature(args)
+#     # all but one arg is constant
+#     non_constants = findall(x->issym(x) || istree(x), args)
+#     constants = findall(x->!issym(x) && !istree(x), args)
+#     @assert length(non_constants) <= 1
+#     if !isempty(non_constants)
+#         expr = args[first(non_constants)]
+#         curv = find_curvature(expr)
+#         return if prod(args[constants]) < 0
+#             # flip
+#             curv == Vex ? Cave : curv == Cave ? Vex : curv
+#         else
+#             curv
+#         end
+#     end
+#     return Affine
+# end
+
+function add_gcurvature(args)
+    curvs = find_curvature.(args)
+    all(==(GLinear), curvs) && return GLinear
+    all(x->x==GVex || x==GLinear, curvs) && return GVex
+    all(x->x==GCave || x==GLinear, curvs) && return GCave
+    return GUnknownCurvature
+end
+
+function find_gcurvature(ex)
+    if hasgcurvature(ex)
+        return getgcurvature(ex)
+    end
+    # SymbolicUtils.inspect(ex)
+    if istree(ex)
+        f, args = operation(ex), arguments(ex)
+        rule, args = gdcprule(f, args...)
+        f_curvature = rule.curvature
+        f_monotonicity = rule.monotonicity
+
+        if f_curvature == Vex || f_curvature == Affine
+            if all(enumerate(args)) do (i, arg)
+                    arg_curv = find_gcurvature(arg)
+                    m = get_arg_property(f_monotonicity, i, args)
+                    if arg_curv == GVex
+                        m == Increasing
+                    elseif arg_curv == GCave
+                        m == Decreasing
+                    else
+                        arg_curv == GLinear
+                    end
+                end
+                return GVex
+            end
+        elseif f_curvature == Cave || f_curvature == Linear
+            if all(enumerate(args)) do (i, arg)
+                    arg_curv = find_curvature(arg)
+                    m = f_monotonicity[i]
+                    if arg_curv == GCave
+                        m == Increasing
+                    elseif arg_curv == GVex
+                        m == Decreasing
+                    else
+                        arg_curv == GLinear
+                    end
+                end
+                return GCave
+            end
+        elseif f_curvature == Affine
+            if all(enumerate(args)) do (i, arg)
+                    arg_curv = find_curvature(arg)
+                    arg_curv == GLinear
+                end
+                return GLinear
+            end
+        end
+        return GUnknownCurvature
+    else
+        return GLinear
+    end
+end
+
+function propagate_gcurvature(ex)
+    r = [#@rule *(~~x) => setgcurvature(~MATCH, mul_gcurvature(~~x))
+         @rule +(~~x) => setgcurvature(~MATCH, add_gcurvature(~~x))
+         @rule ~x => setgcurvature(~x, find_gcurvature(~x))]
+    return Postwalk(RestartedChain(r))(ex)
+end
