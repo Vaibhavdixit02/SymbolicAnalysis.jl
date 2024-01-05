@@ -8,11 +8,11 @@ end
 
 @register_symbolic conjugation(X::Symbolics.Arr, B::Symbolics.Arr)
 
-add_gdcprule(conjugation, SymmetricPositiveDefinite, GPositive, GLinear, GIncreasing)
+add_gdcprule(conjugation, SymmetricPositiveDefinite, GPositive, GConvex, GIncreasing)
 
-add_gdcprule(tr, SymmetricPositiveDefinite, GPositive, GLinear, GIncreasing)
+add_gdcprule(tr, SymmetricPositiveDefinite, GPositive, GConvex, GIncreasing)
 
-add_gdcprule(sum, SymmetricPositiveDefinite, GPositive, GLinear, GIncreasing)
+add_gdcprule(sum, SymmetricPositiveDefinite, GPositive, GConvex, GIncreasing)
 
 function scalar_mat(X, k = size(X, 1))
     return tr(X)*I(k)
@@ -20,9 +20,9 @@ end
 
 @register_symbolic scalar_mat(X::Symbolics.Arr, k::Int)
 
-add_gdcprule(scalar_mat, SymmetricPositiveDefinite, GPositive, GLinear, GIncreasing)
+add_gdcprule(scalar_mat, SymmetricPositiveDefinite, GPositive, GConvex, GIncreasing)
 
-add_gdcprule(diag, SymmetricPositiveDefinite, GPositive, GLinear, GIncreasing)
+add_gdcprule(diag, SymmetricPositiveDefinite, GPositive, GConvex, GIncreasing)
 
 function pinching(X, Ps)
     return sum(Ps[i]*X*Ps[i] for i in eachindex(Ps); dims = 1)
@@ -30,4 +30,4 @@ end
 
 @register_symbolic pinching(X::Symbolics.Arr, Ps::Vector{Symbolics.Arr})
 
-add_gdcprule(pinching, SymmetricPositiveDefinite, GPositive, GLinear, GIncreasing)
+add_gdcprule(pinching, SymmetricPositiveDefinite, GPositive, GConvex, GIncreasing)
