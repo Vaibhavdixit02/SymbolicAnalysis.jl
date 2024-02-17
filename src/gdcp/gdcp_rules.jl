@@ -12,7 +12,7 @@ function add_gdcprule(f, manifold, sign, curvature, monotonicity)
     if !(monotonicity isa Tuple)
         monotonicity = (monotonicity,)
     end
-    dcprules_dict[f] = makerule(manifold, sign, curvature, monotonicity)
+    gdcprules_dict[f] = makerule(manifold, sign, curvature, monotonicity)
 end
 makegrule(manifold, sign, curvature, monotonicity) = (manifold=manifold,
                 gsign=sign,
@@ -23,11 +23,11 @@ hasgdcprule(f::Function) = haskey(gdcprules_dict, f)
 hasgdcprule(f) = false
 gdcprule(f, args...) = gdcprules_dict[f], args
 
-setgcurvature(ex::Symbolic, curv) = setmetadata(ex, GCurvature, curv)
+setgcurvature(ex::Union{Symbolic, Num}, curv) = setmetadata(ex, GCurvature, curv)
 setgcurvature(ex, curv) = ex
-getgcurvature(ex::Symbolic) = getmetadata(ex, GCurvature)
+getgcurvature(ex::Union{Symbolic, Num}) = getmetadata(ex, GCurvature)
 getgcurvature(ex) = GLinear
-hasgcurvature(ex::Symbolic) = hasmetadata(ex, GCurvature)
+hasgcurvature(ex::Union{Symbolic, Num}) = hasmetadata(ex, GCurvature)
 hasgcurvature(ex) = ex isa Real
 
 # function mul_gcurvature(args)
@@ -49,7 +49,7 @@ hasgcurvature(ex) = ex isa Real
 # end
 
 function add_gcurvature(args)
-    curvs = find_curvature.(args)
+    curvs = find_gcurvature.(args)
     all(==(GLinear), curvs) && return GLinear
     all(x->x==GVex || x==GLinear, curvs) && return GVex
     all(x->x==GCave || x==GLinear, curvs) && return GCave
@@ -57,10 +57,12 @@ function add_gcurvature(args)
 end
 
 function find_gcurvature(ex)
+    @show ex
+    @show hasgcurvature(ex)
     if hasgcurvature(ex)
         return getgcurvature(ex)
     end
-    # SymbolicUtils.inspect(ex)
+    @show istree(ex)
     if istree(ex)
         f, args = operation(ex), arguments(ex)
         rule, args = gdcprule(f, args...)
@@ -81,7 +83,7 @@ function find_gcurvature(ex)
                 end
                 return GVex
             end
-        elseif f_curvature == Cave || f_curvature == Linear
+        elseif f_curvature == Cave || f_curvature == Affine
             if all(enumerate(args)) do (i, arg)
                     arg_curv = find_curvature(arg)
                     m = f_monotonicity[i]
@@ -102,8 +104,15 @@ function find_gcurvature(ex)
                 end
                 return GLinear
             end
+        elseif f_curvature isa GCurvature
+            return f_curvature
+        else
+            return GUnknownCurvature
         end
-        return GUnknownCurvature
+    elseif hasfield(typeof(ex), :val) && operation(ex.val) in keys(gdcprules_dict)
+        f, args = operation(ex.val), arguments(ex.val)
+        rule, args = gdcprule(f, args...)
+        return rule.curvature
     else
         return GLinear
     end
