@@ -30,7 +30,7 @@ ex = SymbolicAnalysis.propagate_gcurvature(ex)
 
 SymbolicAnalysis.getgcurvature(ex)
 
-ex = sum(SymbolicAnalysis.sdivergence(X, As[i]) for i in 1:5)
+ex = sum(SymbolicAnalysis.sdivergence(X, As[i]) for i in 1:5) |> unwrap
 ex = SymbolicAnalysis.propagate_gcurvature(ex)
 
 SymbolicAnalysis.getgcurvature(ex)
