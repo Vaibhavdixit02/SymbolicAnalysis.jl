@@ -34,3 +34,13 @@ ex = sum(SymbolicAnalysis.sdivergence(X, As[i]) for i in 1:5) |> unwrap
 ex = SymbolicAnalysis.propagate_gcurvature(ex)
 
 SymbolicAnalysis.getgcurvature(ex)
+
+ex = Manifolds.distance(M, As[1], X)
+ex = SymbolicAnalysis.propagate_gcurvature(ex)
+
+SymbolicAnalysis.getgcurvature(ex)
+
+ex = sum(Manifolds.distance(M, As[i], X) for i in 1:5) |> unwrap
+ex = SymbolicAnalysis.propagate_gcurvature(ex)
+
+SymbolicAnalysis.getgcurvature(ex)

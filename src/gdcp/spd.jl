@@ -40,3 +40,7 @@ end
 
 @register_symbolic sdivergence(X::Symbolics.Arr, Y::Matrix)
 add_gdcprule(sdivergence, SymmetricPositiveDefinite, GPositive, GVex, GIncreasing)
+
+
+@register_symbolic Manifolds.distance(M::Manifolds.SymmetricPositiveDefinite, X::AbstractMatrix, Y::Symbolics.Arr)
+add_gdcprule(Manifolds.distance, SymmetricPositiveDefinite, GPositive, GVex, GIncreasing)
