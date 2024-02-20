@@ -72,6 +72,7 @@ dcprule(f, args...) = dcprules_dict[f], args
 setsign(ex::Symbolic, sign) = setmetadata(ex, Sign, sign)
 setsign(ex, sign) = ex
 function getsign(ex::Symbolic)
+    @show ex
     if issym(ex)
         return getmetadata(ex, Sign)
     elseif istree(ex)
@@ -113,10 +114,14 @@ function propagate_sign(ex)
     ex = Postwalk(PassThrough(r))(ex)
 
     # Step 2: set the sign of primitve functions
-    r = @rule ~x::istree  =>
-    setsign(~x, (dcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasdcprule(operation(~x))}
+    r = @rule ~x::istree  => setsign(~x, (dcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasdcprule(operation(~x))}
     
     ex = Postwalk(PassThrough(r))(ex)
+
+    r = @rule ~x::istree  => setsign(~x, (gdcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasgdcprule(operation(~x))}
+    
+    ex = Postwalk(PassThrough(r))(ex)
+
     SymbolicUtils.inspect(ex, metadata=true)
     # Step 3: propagate the sign to top level
     rs = [@rule *(~~x) => setsign(~MATCH, mul_sign(~~x))

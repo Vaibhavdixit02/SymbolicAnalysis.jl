@@ -2,7 +2,7 @@ using Manifolds
 using Symbolics: @register_symbolic, unwrap
 using LinearAlgebra
 
-@enum GSign GPositive GNegative GAnySign
+# @enum GSign GPositive GNegative GAnySign
 @enum GCurvature GVex GCave GLinear GUnknownCurvature
 @enum GMonotonicity GIncreasing GDecreasing GAnyMono
 
@@ -15,7 +15,7 @@ function add_gdcprule(f, manifold, sign, curvature, monotonicity)
     gdcprules_dict[f] = makerule(manifold, sign, curvature, monotonicity)
 end
 makegrule(manifold, sign, curvature, monotonicity) = (manifold=manifold,
-                gsign=sign,
+                sign=sign,
                 gcurvature=curvature,
                 gmonotonicity=monotonicity)
 
@@ -57,15 +57,19 @@ function add_gcurvature(args)
 end
 
 function find_gcurvature(ex)
-    @show ex
-    @show hasgcurvature(ex)
+    # @show ex
+    # @show hasgcurvature(ex)
     if hasgcurvature(ex)
         return getgcurvature(ex)
     end
-    @show istree(ex)
+    # @show istree(ex)
     if istree(ex)
         f, args = operation(ex), arguments(ex)
-        rule, args = gdcprule(f, args...)
+        if f in keys(gdcprules_dict)
+            rule, args = gdcprule(f, args...)
+        else
+            rule, args = dcprule(f, args...)
+        end
         f_curvature = rule.curvature
         f_monotonicity = rule.monotonicity
 
@@ -85,7 +89,7 @@ function find_gcurvature(ex)
             end
         elseif f_curvature == Cave || f_curvature == Affine
             if all(enumerate(args)) do (i, arg)
-                    arg_curv = find_curvature(arg)
+                    arg_curv = find_gcurvature(arg)
                     m = f_monotonicity[i]
                     if arg_curv == GCave
                         m == Increasing
@@ -99,7 +103,7 @@ function find_gcurvature(ex)
             end
         elseif f_curvature == Affine
             if all(enumerate(args)) do (i, arg)
-                    arg_curv = find_curvature(arg)
+                    arg_curv = find_gcurvature(arg)
                     arg_curv == GLinear
                 end
                 return GLinear

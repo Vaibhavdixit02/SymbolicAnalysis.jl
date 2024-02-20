@@ -35,12 +35,14 @@ ex = SymbolicAnalysis.propagate_gcurvature(ex)
 
 SymbolicAnalysis.getgcurvature(ex)
 
-ex = Manifolds.distance(M, As[1], X)
+ex = Manifolds.distance(M, As[1], X)^2 |> unwrap
+ex = SymbolicAnalysis.propagate_sign(ex)
 ex = SymbolicAnalysis.propagate_gcurvature(ex)
 
 SymbolicAnalysis.getgcurvature(ex)
 
-ex = sum(Manifolds.distance(M, As[i], X) for i in 1:5) |> unwrap
+ex = sum(Manifolds.distance(M, As[i], X)^2 for i in 1:5) |> unwrap
+ex = SymbolicAnalysis.propagate_sign(ex)
 ex = SymbolicAnalysis.propagate_gcurvature(ex)
 
 SymbolicAnalysis.getgcurvature(ex)
