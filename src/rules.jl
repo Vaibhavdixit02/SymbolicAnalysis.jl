@@ -73,6 +73,7 @@ setsign(ex::Symbolic, sign) = setmetadata(ex, Sign, sign)
 setsign(ex, sign) = ex
 function getsign(ex::Symbolic)
     @show ex
+    @show istree(ex)
     if issym(ex)
         return getmetadata(ex, Sign)
     elseif istree(ex)
@@ -131,7 +132,7 @@ function propagate_sign(ex)
     rs = [
           @rule +(~~x) => setsign(~MATCH, add_sign(~~x))
           ]
-    ex = Prewalk(Chain(rs))(ex)
+    ex = Postwalk(Chain(rs))(ex)
     # SymbolicUtils.inspect(ex)
     ex
 end
