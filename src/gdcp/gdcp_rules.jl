@@ -34,18 +34,17 @@ hasgcurvature(ex) = ex isa Real
 #     # all but one arg is constant
 #     non_constants = findall(x->issym(x) || istree(x), args)
 #     constants = findall(x->!issym(x) && !istree(x), args)
-#     @assert length(non_constants) <= 1
 #     if !isempty(non_constants)
-#         expr = args[first(non_constants)]
-#         curv = find_curvature(expr)
-#         return if prod(args[constants]) < 0
+#         expr = args[non_constants]
+#         curv = find_gcurvature(expr)
+#         return if !isempty(constants) && prod(args[constants]) < 0
 #             # flip
-#             curv == Vex ? Cave : curv == Cave ? Vex : curv
+#             curv == GVex ? GCave : curv == GCave ? GVex : curv
 #         else
 #             curv
 #         end
 #     end
-#     return Affine
+#     return GLinear
 # end
 
 function add_gcurvature(args)
@@ -123,8 +122,10 @@ function find_gcurvature(ex)
 end
 
 function propagate_gcurvature(ex)
-    r = [#@rule *(~~x) => setgcurvature(~MATCH, mul_gcurvature(~~x))
+    r = [
          @rule +(~~x) => setgcurvature(~MATCH, add_gcurvature(~~x))
-         @rule ~x => setgcurvature(~x, find_gcurvature(~x))]
+         @rule ~x => setgcurvature(~x, find_gcurvature(~x))
+        #  @rule *(~~x) => setgcurvature(~MATCH, mul_gcurvature(~~x))
+        ]
     return Postwalk(RestartedChain(r))(ex)
 end

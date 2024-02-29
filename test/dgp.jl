@@ -18,7 +18,8 @@ SymbolicAnalysis.getgcurvature(ex)
 # using Convex
 
 # X = Convex.Variable(5, 5)
-# ex = logdet(A'*X*A) - logdet(X)
+# Y = Convex.Variable(5, 5)
+# ex = exp(X'*Y)
 # vexity(ex)
 
 ## Karcher Mean
@@ -43,6 +44,19 @@ ex = SymbolicAnalysis.propagate_gcurvature(ex)
 SymbolicAnalysis.getgcurvature(ex)
 
 ex = sum(Manifolds.distance(M, As[i], X)^2 for i in 1:5) |> unwrap
+ex = SymbolicAnalysis.propagate_sign(ex)
+ex = SymbolicAnalysis.propagate_gcurvature(ex)
+
+SymbolicAnalysis.getgcurvature(ex)
+
+@variables Y[1:5, 1:5]
+ex = sqrt(X*Y) |> unwrap
+ex = SymbolicAnalysis.propagate_sign(ex)
+ex = SymbolicAnalysis.propagate_gcurvature(ex)
+
+SymbolicAnalysis.getgcurvature(ex)
+
+ex = exp(X*Y)
 ex = SymbolicAnalysis.propagate_sign(ex)
 ex = SymbolicAnalysis.propagate_gcurvature(ex)
 
