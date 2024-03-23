@@ -19,7 +19,7 @@ SymbolicAnalysis.getgcurvature(ex)
 
 # X = Convex.Variable(5, 5)
 # Y = Convex.Variable(5, 5)
-# ex = exp(X'*Y)
+# ex = sqrt(X*Y)
 # vexity(ex)
 
 ## Karcher Mean
@@ -61,3 +61,49 @@ ex = SymbolicAnalysis.propagate_sign(ex)
 ex = SymbolicAnalysis.propagate_gcurvature(ex)
 
 SymbolicAnalysis.getgcurvature(ex)
+
+using Manopt, Manifolds, Random, LinearAlgebra, ManifoldDiff
+using ManifoldDiff: grad_distance, prox_distance
+Random.seed!(42);
+
+m = 100
+σ = 0.005
+q = Matrix{Float64}(I, 5, 5) .+ 2.0
+data2 = [exp(M, q, σ * rand(M; vector_at=q)) for i in 1:m];
+
+f(M, x) = sum(distance(M, x, data2[i])^2 for i in 1:m)
+f(x) = sum(distance(M, x, data2[i])^2 for i in 1:m)
+
+using FiniteDifferences
+
+r_backend = ManifoldDiff.RiemannianProjectionBackend(
+    ManifoldDiff.FiniteDifferencesBackend()
+)
+gradf1_FD(M, p) = ManifoldDiff.gradient(M, f, p, r_backend)
+
+m1 = gradient_descent(M, f, gradf1_FD, data2[1]; maxiter=1000)
+
+################################
+using Optimization, ModelingToolkit, OptimizationManopt, Manifolds, Random, LinearAlgebra
+
+M = SymmetricPositiveDefinite(5)
+m = 100
+σ = 0.005
+q = Matrix{Float64}(I, 5, 5) .+ 2.0
+data2 = [exp(M, q, σ * rand(M; vector_at=q)) for i in 1:m];
+# f(M, x, p = nothing) = sum(SymbolicAnalysis.distance(M, data2[i], x)^2 for i in 1:m)
+# f(x, p = nothing) = sum(SymbolicAnalysis.distance(M, data2[i], x)^2 for i in 1:m)
+
+# optf = OptimizationFunction(f, Optimization.AutoModelingToolkit())
+# optprob = Optimization.instantiate_function(optf, data2[1], Optimization.AutoModelingToolkit(), nothing)
+# opt = OptimizationManopt.GradientDescentOptimizer(M)
+# prob = OptimizationProblem(, data2[1])
+# sol = solve(prob, opt)
+
+# @variables X[1:5, 1:5]
+# obj = sum(Manifolds.distance(M, data2[i], X)^2 for i in 1:5) |> unwrap
+
+# optsys = complete(OptimizationSystem(obj, X, [], name = :opt1))
+# prob = OptimizationProblem(optsys, data2[1])
+# opt = OptimizationManopt.NelderMeadOptimizer(M)
+# sol = solve(prob, opt, maxiters = 1000)

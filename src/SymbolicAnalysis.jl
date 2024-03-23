@@ -6,7 +6,7 @@ using LinearAlgebra
 using LogExpFunctions
 using StatsBase
 using Distributions
-using DSP
+using DSP, Dictionaries
 
 import Symbolics: Symbolic, issym, istree, Term
 using Symbolics.Rewriters

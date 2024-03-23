@@ -112,8 +112,8 @@ function quad_form(x::AbstractVector, P::AbstractMatrix)
     return x' * P * x
 end
 Symbolics.@register_symbolic quad_form(x::AbstractVector, P::AbstractMatrix)
-add_dcprule(quad_form, (array_domain(ℝ,1), semidefinite_domain()), Positive, Vex, increasing_if_positive)
-add_dcprule(quad_form, (array_domain(ℝ,1), negsemidefinite_domain()), Negative, Cave, increasing_if_positive ∘ -)
+add_dcprule(quad_form(::AbstractVector, ::Number), (array_domain(ℝ,1), semidefinite_domain()), Positive, Vex, increasing_if_positive)
+add_dcprule(quad_form(::Number, ::Number), (array_domain(ℝ,1), negsemidefinite_domain()), Negative, Cave, increasing_if_positive ∘ -)
 
 function quad_over_lin(x::AbstractArray, y::Number)
     if y < 0
@@ -122,8 +122,20 @@ function quad_over_lin(x::AbstractArray, y::Number)
     return sum(x.^2) / y
 end
 
-Symbolics.@register_symbolic quad_over_lin(x::AbstractArray, y::Number)
+Symbolics.@register_symbolic quad_over_lin(x::Symbolics.Arr, y::Num)
+
+function quad_over_lin(x::Number, y::Number)
+    if y < 0
+        throw(DomainError(y, "y must be positive"))
+    end
+    return x^2 / y
+end
+
+Symbolics.@register_symbolic quad_over_lin(x::Real, y::Real)
+
 add_dcprule(quad_over_lin, (array_domain(ℝ), HalfLine{Number, :open}()), Positive, Vex, (increasing_if_positive, Decreasing))
+
+add_dcprule(quad_over_lin, (ℝ, HalfLine{Number, :open}()), Positive, Vex, (increasing_if_positive, Decreasing))
 
 add_dcprule(sum, array_domain(ℝ, 2), AnySign, Affine, Increasing)
 
