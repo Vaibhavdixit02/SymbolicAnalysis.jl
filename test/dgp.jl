@@ -62,35 +62,35 @@ ex = SymbolicAnalysis.propagate_gcurvature(ex)
 
 SymbolicAnalysis.getgcurvature(ex)
 
-using Manopt, Manifolds, Random, LinearAlgebra, ManifoldDiff
-using ManifoldDiff: grad_distance, prox_distance
-Random.seed!(42);
+# using Manopt, Manifolds, Random, LinearAlgebra, ManifoldDiff
+# using ManifoldDiff: grad_distance, prox_distance
+# Random.seed!(42);
 
-m = 100
-σ = 0.005
-q = Matrix{Float64}(I, 5, 5) .+ 2.0
-data2 = [exp(M, q, σ * rand(M; vector_at=q)) for i in 1:m];
+# m = 100
+# σ = 0.005
+# q = Matrix{Float64}(I, 5, 5) .+ 2.0
+# data2 = [exp(M, q, σ * rand(M; vector_at=q)) for i in 1:m];
 
-f(M, x) = sum(distance(M, x, data2[i])^2 for i in 1:m)
-f(x) = sum(distance(M, x, data2[i])^2 for i in 1:m)
+# f(M, x) = sum(distance(M, x, data2[i])^2 for i in 1:m)
+# f(x) = sum(distance(M, x, data2[i])^2 for i in 1:m)
 
-using FiniteDifferences
+# using FiniteDifferences
 
-r_backend = ManifoldDiff.RiemannianProjectionBackend(
-    ManifoldDiff.FiniteDifferencesBackend()
-)
-gradf1_FD(M, p) = ManifoldDiff.gradient(M, f, p, r_backend)
+# r_backend = ManifoldDiff.RiemannianProjectionBackend(
+#     ManifoldDiff.FiniteDifferencesBackend()
+# )
+# gradf1_FD(M, p) = ManifoldDiff.gradient(M, f, p, r_backend)
 
-m1 = gradient_descent(M, f, gradf1_FD, data2[1]; maxiter=1000)
+# m1 = gradient_descent(M, f, gradf1_FD, data2[1]; maxiter=1000)
 
-################################
-using Optimization, ModelingToolkit, OptimizationManopt, Manifolds, Random, LinearAlgebra
+# ################################
+# using Optimization, ModelingToolkit, OptimizationManopt, Manifolds, Random, LinearAlgebra
 
-M = SymmetricPositiveDefinite(5)
-m = 100
-σ = 0.005
-q = Matrix{Float64}(I, 5, 5) .+ 2.0
-data2 = [exp(M, q, σ * rand(M; vector_at=q)) for i in 1:m];
+# M = SymmetricPositiveDefinite(5)
+# m = 100
+# σ = 0.005
+# q = Matrix{Float64}(I, 5, 5) .+ 2.0
+# data2 = [exp(M, q, σ * rand(M; vector_at=q)) for i in 1:m];
 # f(M, x, p = nothing) = sum(SymbolicAnalysis.distance(M, data2[i], x)^2 for i in 1:m)
 # f(x, p = nothing) = sum(SymbolicAnalysis.distance(M, data2[i], x)^2 for i in 1:m)
 
@@ -103,7 +103,16 @@ data2 = [exp(M, q, σ * rand(M; vector_at=q)) for i in 1:m];
 # @variables X[1:5, 1:5]
 # obj = sum(Manifolds.distance(M, data2[i], X)^2 for i in 1:5) |> unwrap
 
-# optsys = complete(OptimizationSystem(obj, X, [], name = :opt1))
-# prob = OptimizationProblem(optsys, data2[1])
-# opt = OptimizationManopt.NelderMeadOptimizer(M)
+# optsys = complete(OptimizationSystem(obj, vec(X), [], name = :opt1))
+# prob = OptimizationProblem(optsys, data2[1], grad = true)
+# opt = OptimizationManopt.GradientDescentOptimizer(M)
 # sol = solve(prob, opt, maxiters = 1000)
+
+@variables Sigma[1:5, 1:5]
+xs = [rand(5) for i in 1:20]
+Siginv = inv(Sigma)
+ex = sum(SymbolicAnalysis.quad_form(x, Siginv) for x in xs) + 1/5*logdet(Sigma) |> unwrap
+ex = SymbolicAnalysis.propagate_sign(ex)
+ex = SymbolicAnalysis.propagate_gcurvature(ex)
+
+SymbolicAnalysis.getgcurvature(ex)

@@ -51,19 +51,15 @@ function increasing_if_positive(x)
     AnyMono : sign == Positive ? Increasing : Decreasing
 end
 
-const dcprules_dict = Dictionary()
+const dcprules_dict = Dict()
 
 function add_dcprule(f, domain, sign, curvature, monotonicity)
     if !(monotonicity isa Tuple)
         monotonicity = (monotonicity,)
     end
-    if f in dcprules_dict
-        dcprules_dict[f].push!(makegrule(domain, sign, curvature, monotonicity))  
-    else
-        insert!(dcprules_dict, f, [makerule(domain, sign, curvature, monotonicity)])
-    end
-
+    dcprules_dict[f] = makerule(domain, sign, curvature, monotonicity)
 end
+
 makerule(domain, sign, curvature, monotonicity) = (domain=domain,
                 sign=sign,
                 curvature=curvature,
@@ -86,6 +82,7 @@ function getsign(ex::Symbolic)
     end
 end
 getsign(ex::Number) = ex < 0 ? Negative : Positive
+getsign(ex::AbstractArray) = Positive
 hassign(ex::Symbolic) = hasmetadata(ex, Sign)
 hassign(ex) = ex isa Real
 

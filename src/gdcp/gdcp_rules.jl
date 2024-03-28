@@ -122,6 +122,7 @@ function find_gcurvature(ex)
 end
 
 function propagate_gcurvature(ex)
+    @show ex
     r = [
          @rule +(~~x) => setgcurvature(~MATCH, add_gcurvature(~~x))
          @rule ~x => setgcurvature(~x, find_gcurvature(~x))
