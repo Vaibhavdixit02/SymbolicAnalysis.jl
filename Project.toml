@@ -1,7 +1,7 @@
 name = "SymbolicAnalysis"
 uuid = "4297ee4d-0239-47d8-ba5d-195ecdf594fe"
 authors = ["Vaibhav Dixit <vaibhavyashdixit@gmail.com>", "Shashi Gowda <gowda@mit.edu>"]
-version = "8.74.0"
+version = "0.1.0"
 
 [deps]
 Convex = "f65535da-76fb-5f13-bab9-19810c17039a"
