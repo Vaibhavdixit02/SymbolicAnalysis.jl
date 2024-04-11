@@ -60,7 +60,7 @@ function add_dcprule(f, domain, sign, curvature, monotonicity)
     dcprules_dict[f] = makerule(domain, sign, curvature, monotonicity)
 end
 
-makerule(domain, sign, curvature, monotonicity) = (domain=domain,
+makerule(domain, sign, curvature, monotonicity) = (;domain=domain,
                 sign=sign,
                 curvature=curvature,
                 monotonicity=monotonicity)
@@ -72,23 +72,18 @@ dcprule(f, args...) = dcprules_dict[f], args
 ### Sign ###
 setsign(ex::Symbolic, sign) = setmetadata(ex, Sign, sign)
 setsign(ex, sign) = ex
+
 function getsign(ex::Symbolic)
-    @show ex
-    @show istree(ex)
-    if issym(ex)
-        return getmetadata(ex, Sign)
-    elseif istree(ex)
-        return getmetadata.(ex, Ref(Sign))
-    end
+    return getmetadata(ex, Sign)
 end
 getsign(ex::Number) = ex < 0 ? Negative : Positive
 getsign(ex::AbstractArray) = Positive
+
 hassign(ex::Symbolic) = hasmetadata(ex, Sign)
 hassign(ex) = ex isa Real
 
 function add_sign(args)
-    @show args
-    signs = getsign.(args)
+    signs = reduce(vcat, getsign.(args))
     if any(==(AnySign), signs)
         AnySign
     elseif all(==(Negative), signs)
@@ -118,24 +113,24 @@ function propagate_sign(ex)
 
     # Step 2: set the sign of primitve functions
     r = @rule ~x::istree  => setsign(~x, (dcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasdcprule(operation(~x))}
-    
+
     ex = Postwalk(PassThrough(r))(ex)
 
     r = @rule ~x::istree  => setsign(~x, (gdcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasgdcprule(operation(~x))}
-    
+
     ex = Postwalk(PassThrough(r))(ex)
 
     SymbolicUtils.inspect(ex, metadata=true)
     # Step 3: propagate the sign to top level
     rs = [@rule *(~~x) => setsign(~MATCH, mul_sign(~~x))
           ]
-    ex = Prewalk(Chain(rs))(ex)
+    ex = Postwalk(Chain(rs))(ex)
 
     rs = [
           @rule +(~~x) => setsign(~MATCH, add_sign(~~x))
           ]
-    ex = Postwalk(Chain(rs))(ex)
-    # SymbolicUtils.inspect(ex)
+    ex = Postwalk(RestartedChain(rs))(ex)
+    SymbolicUtils.inspect(ex, metadata=true)
     ex
 end
 
@@ -186,7 +181,7 @@ function get_arg_property(monotonicity, i, args)
     @label start
     if monotonicity isa Function
         monotonicity(args[i])
-    elseif monotonicity isa Tuple
+    elseif monotonicity isa Tuple && i <= length(monotonicity)
         monotonicity = monotonicity[i]
         @goto start
     else

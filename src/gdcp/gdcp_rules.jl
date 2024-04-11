@@ -56,12 +56,9 @@ function add_gcurvature(args)
 end
 
 function find_gcurvature(ex)
-    # @show ex
-    # @show hasgcurvature(ex)
-    if hasgcurvature(ex)
+    if hasgcurvature(ex) && !istree(ex)
         return getgcurvature(ex)
     end
-    # @show istree(ex)
     if istree(ex)
         f, args = operation(ex), arguments(ex)
         if f in keys(gdcprules_dict)
@@ -122,7 +119,6 @@ function find_gcurvature(ex)
 end
 
 function propagate_gcurvature(ex)
-    @show ex
     r = [
          @rule +(~~x) => setgcurvature(~MATCH, add_gcurvature(~~x))
          @rule ~x => setgcurvature(~x, find_gcurvature(~x))
