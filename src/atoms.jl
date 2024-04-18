@@ -123,14 +123,14 @@ end
 
 Symbolics.@register_symbolic quad_over_lin(x::Symbolics.Arr, y::Num)
 
-function quad_over_lin(x::Number, y::Number)
-    if y < 0
+function quad_over_lin(x::Real, y::Real)
+    if getsign(y) == Negative
         throw(DomainError(y, "y must be positive"))
     end
     return x^2 / y
 end
 
-Symbolics.@register_symbolic quad_over_lin(x::Real, y::Real)
+Symbolics.@register_symbolic quad_over_lin(x::Number, y::Number)
 
 add_dcprule(quad_over_lin, (array_domain(ℝ), HalfLine{Number, :open}()), Positive, Vex, (increasing_if_positive, Decreasing))
 

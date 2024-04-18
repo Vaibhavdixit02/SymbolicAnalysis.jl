@@ -1,14 +1,16 @@
-add_gdcprule(*, SymmetricPositiveDefinite, Positive, GLinear, GIncreasing)
+# add_gdcprule(*, SymmetricPositiveDefinite, Positive, GLinear, GIncreasing)
 
 @register_symbolic LinearAlgebra.logdet(X::Union{Symbolics.Arr, Matrix{Num}})
 
-add_gdcprule(logdet, SymmetricPositiveDefinite, Positive, GLinear, GIncreasing)
+add_gdcprule(LinearAlgebra.logdet, SymmetricPositiveDefinite, Positive, GLinear, GIncreasing)
 
 function conjugation(X, B)
     return B'*X*B
 end
 
-@register_symbolic conjugation(X::Matrix, B::Union{Symbolics.Arr, Matrix{Num}})
+@register_array_symbolic conjugation(X::Matrix, B::Union{Symbolics.Arr, Matrix{Num}}) begin
+    size=(size(B,2), size(B,2))
+end
 
 add_gdcprule(conjugation, SymmetricPositiveDefinite, Positive, GVex, GIncreasing)
 
@@ -16,7 +18,7 @@ add_gdcprule(LinearAlgebra.tr, SymmetricPositiveDefinite, Positive, GVex, GIncre
 
 add_gdcprule(sum, SymmetricPositiveDefinite, Positive, GVex, GIncreasing)
 
-add_gdcprule(LinearAlgebra.adjoint, SymmetricPositiveDefinite, Positive, GLinear, GIncreasing)
+add_gdcprule(adjoint, SymmetricPositiveDefinite, Positive, GLinear, GIncreasing)
 
 function scalar_mat(X, k = size(X, 1))
     return tr(X)*I(k)

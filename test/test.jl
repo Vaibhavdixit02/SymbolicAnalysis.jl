@@ -1,7 +1,7 @@
 using SymbolicAnalysis
 using Symbolics, SymbolicAnalysis.LogExpFunctions
 using Symbolics: unwrap
-using LinearAlgebra
+using LinearAlgebra, Test
 
 @syms x y
 ex1 = exp(x^2) - log(x) |> unwrap
@@ -27,7 +27,7 @@ ex = propagate_curvature(propagate_sign(ex))
 @test getcurvature(ex) == SymbolicAnalysis.Cave
 @test getsign(ex) == SymbolicAnalysis.AnySign
 
-ex = 2*abs(x) -1
+ex = 2*abs(x) -1 |> unwrap
 ex = propagate_curvature(propagate_sign(ex))
 @test getcurvature(ex) == SymbolicAnalysis.Vex
 @test getsign(ex) == SymbolicAnalysis.AnySign
@@ -66,7 +66,7 @@ cons = [
     log1p(x)^2 - log1p(z) ≲ 0
 ]
 
-ex = propagate_curvature(propagate_sign(cons[1].lhs))
+ex = propagate_curvature(propagate_sign(cons[1].lhs |> unwrap))
 @test getcurvature(ex) == SymbolicAnalysis.Affine
 
 ex = propagate_curvature(propagate_sign(cons[2].lhs))

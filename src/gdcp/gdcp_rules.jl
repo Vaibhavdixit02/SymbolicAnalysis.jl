@@ -12,7 +12,7 @@ function add_gdcprule(f, manifold, sign, curvature, monotonicity)
     if !(monotonicity isa Tuple)
         monotonicity = (monotonicity,)
     end
-    gdcprules_dict[f] = makerule(manifold, sign, curvature, monotonicity)
+    gdcprules_dict[f] = makegrule(manifold, sign, curvature, monotonicity)
 end
 makegrule(manifold, sign, curvature, monotonicity) = (manifold=manifold,
                 sign=sign,
@@ -30,22 +30,38 @@ getgcurvature(ex) = GLinear
 hasgcurvature(ex::Union{Symbolic, Num}) = hasmetadata(ex, GCurvature)
 hasgcurvature(ex) = ex isa Real
 
-# function mul_gcurvature(args)
-#     # all but one arg is constant
-#     non_constants = findall(x->issym(x) || istree(x), args)
-#     constants = findall(x->!issym(x) && !istree(x), args)
-#     if !isempty(non_constants)
-#         expr = args[non_constants]
-#         curv = find_gcurvature(expr)
-#         return if !isempty(constants) && prod(args[constants]) < 0
-#             # flip
-#             curv == GVex ? GCave : curv == GCave ? GVex : curv
-#         else
-#             curv
-#         end
-#     end
-#     return GLinear
-# end
+function mul_gcurvature(args)
+    # all but one arg is constant
+    non_constants = findall(x->issym(x) || istree(x), args)
+    constants = findall(x->!issym(x) && !istree(x), args)
+    if !isempty(non_constants)
+        expr = args[non_constants]
+        curv = find_gcurvature.(expr)
+        return if !isempty(constants) && prod(args[constants]) < 0
+            # flip
+            if all(x -> x == GVex, curv)
+                return GCave
+            elseif all(x -> x == GVex, curv)
+                return GVex
+            elseif all(x -> x == GLinear, curv)
+                return GLinear
+            else
+                return GUnknownCurvature
+            end
+        else
+            if all(x -> x == GVex, curv)
+                return GVex
+            elseif all(x -> x == GCave, curv)
+                return GCave
+            elseif all(x -> x == GLinear, curv)
+                return GLinear
+            else
+                GUnknownCurvature
+            end
+        end
+    end
+    return GLinear
+end
 
 function add_gcurvature(args)
     curvs = find_gcurvature.(args)
@@ -56,18 +72,21 @@ function add_gcurvature(args)
 end
 
 function find_gcurvature(ex)
-    if hasgcurvature(ex) && !istree(ex)
+    if hasgcurvature(ex)
         return getgcurvature(ex)
     end
     if istree(ex)
         f, args = operation(ex), arguments(ex)
         if f in keys(gdcprules_dict)
             rule, args = gdcprule(f, args...)
+            f_curvature = rule.gcurvature
+            f_monotonicity = rule.gmonotonicity
         else
             rule, args = dcprule(f, args...)
+            f_curvature = rule.curvature
+            f_monotonicity = rule.monotonicity
         end
-        f_curvature = rule.curvature
-        f_monotonicity = rule.monotonicity
+        
 
         if f_curvature == Vex || f_curvature == Affine
             if all(enumerate(args)) do (i, arg)
@@ -121,8 +140,9 @@ end
 function propagate_gcurvature(ex)
     r = [
          @rule +(~~x) => setgcurvature(~MATCH, add_gcurvature(~~x))
+         @rule *(~~x) => setgcurvature(~MATCH, mul_gcurvature(~~x))
          @rule ~x => setgcurvature(~x, find_gcurvature(~x))
-        #  @rule *(~~x) => setgcurvature(~MATCH, mul_gcurvature(~~x))
         ]
-    return Postwalk(RestartedChain(r))(ex)
+    ex= Postwalk(RestartedChain(r))(ex)
+    return ex
 end

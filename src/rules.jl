@@ -74,7 +74,10 @@ setsign(ex::Symbolic, sign) = setmetadata(ex, Sign, sign)
 setsign(ex, sign) = ex
 
 function getsign(ex::Symbolic)
-    return getmetadata(ex, Sign)
+    if hasmetadata(ex, Sign)
+        return getmetadata(ex, Sign)
+    end
+    return AnySign
 end
 getsign(ex::Number) = ex < 0 ? Negative : Positive
 getsign(ex::AbstractArray) = Positive
@@ -82,7 +85,17 @@ getsign(ex::AbstractArray) = Positive
 hassign(ex::Symbolic) = hasmetadata(ex, Sign)
 hassign(ex) = ex isa Real
 
+Symbolics.arguments(x::Number) = x
+
 function add_sign(args)
+    if hassign(args)
+        return getsign(args)
+    end
+    for i in eachindex(args)
+        if istree(args[i])
+            args[i] = propagate_sign(args[i])
+        end
+    end
     signs = reduce(vcat, getsign.(args))
     if any(==(AnySign), signs)
         AnySign
@@ -108,30 +121,16 @@ end
 
 function propagate_sign(ex)
     # Step 1: set the sign of all variables to be AnySign
-    r = @rule ~x::issym => hassign(~x) ? ~x : setsign(~x, AnySign)
-    ex = Postwalk(PassThrough(r))(ex)
-
-    # Step 2: set the sign of primitve functions
-    r = @rule ~x::istree  => setsign(~x, (dcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasdcprule(operation(~x))}
-
-    ex = Postwalk(PassThrough(r))(ex)
-
-    r = @rule ~x::istree  => setsign(~x, (gdcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasgdcprule(operation(~x))}
-
-    ex = Postwalk(PassThrough(r))(ex)
-
-    SymbolicUtils.inspect(ex, metadata=true)
-    # Step 3: propagate the sign to top level
-    rs = [@rule *(~~x) => setsign(~MATCH, mul_sign(~~x))
-          ]
-    ex = Postwalk(Chain(rs))(ex)
-
-    rs = [
+    rs = [@rule ~x::issym => hassign(~x) ? ~x : setsign(~x, AnySign)
+          @rule ~x  => setsign(~x, (dcprule(~x))[1].sign) where {hasdcprule(~x)}
+          @rule ~x  => setsign(~x, (gdcprule(~x))[1].sign) where {hasgdcprule(~x)}
+          @rule ~x::istree  => setsign(~x, (dcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasdcprule(operation(~x))}
+          @rule ~x::istree  => setsign(~x, (gdcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasgdcprule(operation(~x))}
+          @rule *(~~x) => setsign(~MATCH, mul_sign(~~x))
           @rule +(~~x) => setsign(~MATCH, add_sign(~~x))
-          ]
+        ]
     ex = Postwalk(RestartedChain(rs))(ex)
-    SymbolicUtils.inspect(ex, metadata=true)
-    ex
+    return ex
 end
 
 ### Curvature ###
@@ -172,7 +171,6 @@ end
 function propagate_curvature(ex)
     r = [@rule *(~~x) => setcurvature(~MATCH, mul_curvature(~~x))
          @rule +(~~x) => setcurvature(~MATCH, add_curvature(~~x))
-        #  @rule broadcast(~f, ~~x) => setcurvature(~MATCH, propagate_curvature(propagate_sign(Symbolics.scalarize((~MATCH)[1]))))
          @rule ~x => setcurvature(~x, find_curvature(~x))]
     Postwalk(RestartedChain(r))(ex)
 end
@@ -196,7 +194,9 @@ function find_curvature(ex)
     # SymbolicUtils.inspect(ex)
     if istree(ex)
         f, args = operation(ex), arguments(ex)
-        rule, args = dcprule(f, args...)
+        if hasdcprule(f)
+            rule, args = dcprule(f, args...)
+        end
         f_curvature = rule.curvature
         f_monotonicity = rule.monotonicity
 
