@@ -122,8 +122,8 @@ end
 function propagate_sign(ex)
     # Step 1: set the sign of all variables to be AnySign
     rs = [@rule ~x::issym => hassign(~x) ? ~x : setsign(~x, AnySign)
-          @rule ~x  => setsign(~x, (dcprule(~x))[1].sign) where {hasdcprule(~x)}
-          @rule ~x  => setsign(~x, (gdcprule(~x))[1].sign) where {hasgdcprule(~x)}
+          @rule ~x::issym  => setsign(~x, (dcprule(~x))[1].sign) where {hasdcprule(~x)}
+          @rule ~x::issym  => setsign(~x, (gdcprule(~x))[1].sign) where {hasgdcprule(~x)}
           @rule ~x::istree  => setsign(~x, (dcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasdcprule(operation(~x))}
           @rule ~x::istree  => setsign(~x, (gdcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasgdcprule(operation(~x))}
           @rule *(~~x) => setsign(~MATCH, mul_sign(~~x))
@@ -134,7 +134,7 @@ function propagate_sign(ex)
 end
 
 ### Curvature ###
-#
+
 setcurvature(ex::Symbolic, curv) = setmetadata(ex, Curvature, curv)
 setcurvature(ex, curv) = ex
 getcurvature(ex::Symbolic) = getmetadata(ex, Curvature)
@@ -146,7 +146,12 @@ function mul_curvature(args)
     # all but one arg is constant
     non_constants = findall(x->issym(x) || istree(x), args)
     constants = findall(x->!issym(x) && !istree(x), args)
-    @assert length(non_constants) <= 1
+    try
+        @assert length(non_constants) <= 1
+    catch
+        @warn "DCP does not support multiple non-constant arguments in multiplication"
+        return UnknownCurvature
+    end
     if !isempty(non_constants)
         expr = args[first(non_constants)]
         curv = find_curvature(expr)
@@ -196,6 +201,8 @@ function find_curvature(ex)
         f, args = operation(ex), arguments(ex)
         if hasdcprule(f)
             rule, args = dcprule(f, args...)
+        else
+            return UnknownCurvature
         end
         f_curvature = rule.curvature
         f_monotonicity = rule.monotonicity

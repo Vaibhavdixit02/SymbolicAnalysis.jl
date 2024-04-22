@@ -60,6 +60,7 @@ obj = x^2 + y^2 + z^2
 
 ex = propagate_curvature(propagate_sign(obj))
 @test getcurvature(ex) == SymbolicAnalysis.Vex
+@test getsign(ex) == SymbolicAnalysis.Positive
 
 cons = [
     x + y + z ~ 10
@@ -74,6 +75,6 @@ ex = propagate_curvature(propagate_sign(cons[2].lhs))
 
 @variables x y z
 
-ex = SymbolicAnalysis.quad_over_lin(x - y, 1 - max(x, y)) |> unwrap
+ex = SymbolicAnalysis.quad_over_lin(x - y, 1 - max(x, y))
 ex = propagate_curvature(propagate_sign(ex))
 @test getcurvature(ex) == SymbolicAnalysis.Vex
