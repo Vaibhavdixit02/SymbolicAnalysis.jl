@@ -1,7 +1,10 @@
 using SymbolicAnalysis, Test
-using SafeTestsets, Pkg
+using SafeTestsets
 
-@testset "SymbolicAnalysis.jl" begin
+@testset "DCP" begin
     include("test.jl")
+end
+
+@testset "DGCP" begin
     include("dgp.jl")
 end
