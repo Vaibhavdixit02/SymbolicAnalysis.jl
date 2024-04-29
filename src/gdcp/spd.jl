@@ -39,7 +39,7 @@ end
 add_gdcprule(pinching, SymmetricPositiveDefinite, Positive, GVex, GIncreasing)
 
 function sdivergence(X, Y)
-    return logdet((X+Y)/2) - 1/2*logdet(X) - 1/2*logdet(Y)
+    return logdet((X+Y)/2) - 1/2*logdet(X*Y)
 end
 
 @register_symbolic sdivergence(X::Union{Symbolics.Arr, Matrix{Num}}, Y::Matrix)
@@ -50,3 +50,5 @@ add_gdcprule(Manifolds.distance, SymmetricPositiveDefinite, Positive, GVex, GInc
 
 @register_symbolic LinearAlgebra.exp(X::Union{Symbolics.Arr, Matrix{Num}})
 add_gdcprule(exp, SymmetricPositiveDefinite, Positive, GVex, GIncreasing)
+
+add_gdcprule(sqrt, SymmetricPositiveDefinite, Positive, GVex, GIncreasing)

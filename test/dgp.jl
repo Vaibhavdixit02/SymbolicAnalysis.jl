@@ -66,7 +66,7 @@ ex = sqrt(X*Y) |> unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)
 ex = SymbolicAnalysis.propagate_gcurvature(ex)
 
-@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GCave
+@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GVex
 
 ex = exp(X*Y) |> unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)
@@ -101,7 +101,7 @@ using Optimization, ModelingToolkit, OptimizationManopt, Manifolds, Random, Line
 # M = SymmetricPositiveDefinite(5)
 m = 100
 σ = 0.005
-q = Matrix{Float64}(I, 5, 5) .+ 2.0
+q = Matrix{Float64}(LinearAlgebra.I(5)) .+ 2.0
 
 # f(M, x, p = nothing) = sum(SymbolicAnalysis.distance(M, data2[i], x)^2 for i in 1:m)
 
@@ -137,7 +137,7 @@ obj = SymbolicAnalysis.propagate_gcurvature(obj)
 @show SymbolicAnalysis.getgcurvature(obj)
 
 optsys = complete(OptimizationSystem(obj, Siginv, [], name = :opt2))
-s = Float64.(I(5))
+s = Float64.(LinearAlgebra.I(5))
 prob = OptimizationProblem(optsys, s)
 
 f(S, p = nothing) = 1/length(xs) * sum(SymbolicAnalysis.quad_form(x, S) for x in xs) + 1/5*logdet(inv(S))
@@ -147,3 +147,24 @@ prob = OptimizationProblem(optf, Array(s); manifold = M)
 sol = solve(prob, opt, maxiters = 1000)
 sol.objective
 f(s)
+
+A = randn(5,5)
+A = A*A'
+I = LinearAlgebra.I(5)
+function matsqrt(X, p = nothing)
+    return SymbolicAnalysis.sdivergence(X, A) + SymbolicAnalysis.sdivergence(X, Matrix(I))
+end
+
+@time sqrt(A)
+
+optf = OptimizationFunction(matsqrt, Optimization.AutoZygote())
+prob = OptimizationProblem(optf, A/2, manifold = M)
+@time sol = solve(prob, opt, maxiters = 1000)
+
+sqrt(A) ≈ sol.minimizer
+
+ex = matsqrt(X) |> unwrap
+ex = SymbolicAnalysis.propagate_sign(ex)
+ex = SymbolicAnalysis.propagate_gcurvature(ex)
+
+@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GVex
