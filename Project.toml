@@ -26,10 +26,10 @@ ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 Manopt = "0fc0a36d-df90-57f3-8f93-d78a9fc72bb5"
 ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
 Optimization = "7f7a1694-90dd-40f0-9382-eb1efda571ba"
-OptimizationManopt = "e57b7fff-7ee7-4550-b4f0-90e9476e9fb6"
+# OptimizationManopt = "e57b7fff-7ee7-4550-b4f0-90e9476e9fb6"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [targets]
-test = ["Test", "Manopt", "ModelingToolkit", "Optimization", "OptimizationManopt", "Random", "ForwardDiff", "Zygote"]
+test = ["Test", "Manopt", "ModelingToolkit", "Optimization", "Random", "ForwardDiff", "Zygote"]

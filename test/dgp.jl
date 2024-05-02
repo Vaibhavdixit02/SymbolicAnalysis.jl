@@ -163,7 +163,7 @@ prob = OptimizationProblem(optf, A/2, manifold = M)
 
 sqrt(A) ≈ sol.minimizer
 
-ex = matsqrt(X) |> unwrap
+# @profview matsqrt(X)
 ex = SymbolicAnalysis.propagate_sign(ex)
 ex = SymbolicAnalysis.propagate_gcurvature(ex)
 
