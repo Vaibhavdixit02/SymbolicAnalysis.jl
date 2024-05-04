@@ -1,4 +1,4 @@
-# SymbolicAnalysis.jl
+# SymbolicAnalysis.jl 
 
 Symbolics.jl based function property propagation for optimization
 
