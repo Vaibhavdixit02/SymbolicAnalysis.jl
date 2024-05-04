@@ -260,7 +260,7 @@ add_dcprule(trinv, definite_domain(), Positive, Convex, AnyMono)
 """
     tv(x::AbstractVector{<:Number})
 
-Returns the total variation of `x`, defined as `\sum_i |x_{i+1} - x_i|`.
+Returns the total variation of `x`, defined as `sum_i |x_{i+1} - x_i|`.
 
 # Arguments
     - `x::AbstractVector`: A vector.
@@ -274,7 +274,7 @@ add_dcprule(tv, array_domain(ℝ,1), Positive, Convex, AnyMono)
 """
     tv(x::AbstractVector{<:AbstractMatrix})
 
-Returns the total variation of `x`, defined as `\sum_{i,j} |x_{k+1}[i,j] - x_k[i,j]|`.
+Returns the total variation of `x`, defined as `sum_{i,j} |x_{k+1}[i,j] - x_k[i,j]|`.
 
 # Arguments
     - `x::AbstractVector`: A vector of matrices.
