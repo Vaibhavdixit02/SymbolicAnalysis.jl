@@ -5,7 +5,7 @@ Symbolics-based function property propagation for optimization
 SymbolicAnalysis is a package for implementating the Disciplined Programming approach to optimization,
 As demonstrated by the [DCP framework](https://dcp.stanford.edu/), and further followups to it for further classes of
 functions https://www.cvxpy.org/tutorial/index.html such as DGP, DQP etc, symbolic representation of problems can be leveraged
-to idenstify and facilitate building Convex (or similar function properties) expressions.
+to identify and facilitate building Convex (or similar function properties) expressions.
 
 This package aims to utlize expression graph rewriting and metadata propagation supported by Symbolics.jl, to support 
 propagation of several of these properties - limited right now to Euclidean Convexoty and Geodesic Convexity on the Symmetric 

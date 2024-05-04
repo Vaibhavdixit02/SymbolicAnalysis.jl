@@ -1,6 +1,6 @@
 
 @enum Sign Positive Negative AnySign
-@enum Curvature Vex Cave Affine UnknownCurvature
+@enum Curvature Convex Concave Affine UnknownCurvature
 @enum Monotonicity Increasing Decreasing AnyMono
 
 struct CustomDomain{T} <: Domain{T}
@@ -157,7 +157,7 @@ function mul_curvature(args)
         curv = find_curvature(expr)
         return if prod(args[constants]) < 0
             # flip
-            curv == Vex ? Cave : curv == Cave ? Vex : curv
+            curv == Convex ? Concave : curv == Concave ? Convex : curv
         else
             curv
         end
@@ -168,8 +168,8 @@ end
 function add_curvature(args)
     curvs = find_curvature.(args)
     all(==(Affine), curvs) && return Affine
-    all(x->x==Vex || x==Affine, curvs) && return Vex
-    all(x->x==Cave || x==Affine, curvs) && return Cave
+    all(x->x==Convex || x==Affine, curvs) && return Convex
+    all(x->x==Concave || x==Affine, curvs) && return Concave
     return UnknownCurvature
 end
 
@@ -207,33 +207,33 @@ function find_curvature(ex)
         f_curvature = rule.curvature
         f_monotonicity = rule.monotonicity
 
-        if f_curvature == Vex || f_curvature == Affine
+        if f_curvature == Convex || f_curvature == Affine
             if all(enumerate(args)) do (i, arg)
                     arg_curv = find_curvature(arg)
                     m = get_arg_property(f_monotonicity, i, args)
-                    if arg_curv == Vex
+                    if arg_curv == Convex
                         m == Increasing
-                    elseif arg_curv == Cave
+                    elseif arg_curv == Concave
                         m == Decreasing
                     else
                         arg_curv == Affine
                     end
                 end
-                return Vex
+                return Convex
             end
-        elseif f_curvature == Cave || f_curvature == Affine
+        elseif f_curvature == Concave || f_curvature == Affine
             if all(enumerate(args)) do (i, arg)
                     arg_curv = find_curvature(arg)
                     m = f_monotonicity[i]
-                    if arg_curv == Cave
+                    if arg_curv == Concave
                         m == Increasing
-                    elseif arg_curv == Vex
+                    elseif arg_curv == Convex
                         m == Decreasing
                     else
                         arg_curv == Affine
                     end
                 end
-                return Cave
+                return Concave
             end
         elseif f_curvature == Affine
             if all(enumerate(args)) do (i, arg)

@@ -3,7 +3,7 @@ using Symbolics: @register_symbolic, unwrap
 using LinearAlgebra
 
 # @enum GSign GPositive GNegative GAnySign
-@enum GCurvature GVex GCave GLinear GUnknownCurvature
+@enum GCurvature GConvex GConcave GLinear GUnknownCurvature
 @enum GMonotonicity GIncreasing GDecreasing GAnyMono
 
 const gdcprules_dict = Dict()
@@ -39,20 +39,20 @@ function mul_gcurvature(args)
         curv = find_gcurvature.(expr)
         return if !isempty(constants) && prod(args[constants]) < 0
             # flip
-            if all(x -> x == GVex, curv)
-                return GCave
-            elseif all(x -> x == GVex, curv)
-                return GVex
+            if all(x -> x == GConvex, curv)
+                return GConcave
+            elseif all(x -> x == GConvex, curv)
+                return GConvex
             elseif all(x -> x == GLinear, curv)
                 return GLinear
             else
                 return GUnknownCurvature
             end
         else
-            if all(x -> x == GVex, curv)
-                return GVex
-            elseif all(x -> x == GCave, curv)
-                return GCave
+            if all(x -> x == GConvex, curv)
+                return GConvex
+            elseif all(x -> x == GConcave, curv)
+                return GConcave
             elseif all(x -> x == GLinear, curv)
                 return GLinear
             else
@@ -66,8 +66,8 @@ end
 function add_gcurvature(args)
     curvs = find_gcurvature.(args)
     all(==(GLinear), curvs) && return GLinear
-    all(x->x==GVex || x==GLinear, curvs) && return GVex
-    all(x->x==GCave || x==GLinear, curvs) && return GCave
+    all(x->x==GConvex || x==GLinear, curvs) && return GConvex
+    all(x->x==GConcave || x==GLinear, curvs) && return GConcave
     return GUnknownCurvature
 end
 
@@ -88,33 +88,33 @@ function find_gcurvature(ex)
         end
         
 
-        if f_curvature == Vex || f_curvature == Affine
+        if f_curvature == Convex || f_curvature == Affine
             if all(enumerate(args)) do (i, arg)
                     arg_curv = find_gcurvature(arg)
                     m = get_arg_property(f_monotonicity, i, args)
-                    if arg_curv == GVex
+                    if arg_curv == GConvex
                         m == Increasing
-                    elseif arg_curv == GCave
+                    elseif arg_curv == GConcave
                         m == Decreasing
                     else
                         arg_curv == GLinear
                     end
                 end
-                return GVex
+                return GConvex
             end
-        elseif f_curvature == Cave || f_curvature == Affine
+        elseif f_curvature == Concave || f_curvature == Affine
             if all(enumerate(args)) do (i, arg)
                     arg_curv = find_gcurvature(arg)
                     m = f_monotonicity[i]
-                    if arg_curv == GCave
+                    if arg_curv == GConcave
                         m == Increasing
-                    elseif arg_curv == GVex
+                    elseif arg_curv == GConvex
                         m == Decreasing
                     else
                         arg_curv == GLinear
                     end
                 end
-                return GCave
+                return GConcave
             end
         elseif f_curvature == Affine
             if all(enumerate(args)) do (i, arg)
