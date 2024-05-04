@@ -10,7 +10,6 @@ makedocs(;
     format=DocumenterVitepress.MarkdownVitepress(
         repo = "https://github.com/Vaibhavdixit02/SymbolicAnalysis.jl",
         devurl = "dev",
-        deploy_url = "https://vaibhavdixit02.github.io/SymbolicAnalysis.jl",
     ),
     pages=[
         "Home" => "index.md",
