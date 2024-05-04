@@ -1,6 +1,6 @@
 
 @enum Sign Positive Negative AnySign
-@enum Curvature Vex Cave Affine UnknownCurvature
+@enum Curvature Convex Concave Affine UnknownCurvature
 @enum Monotonicity Increasing Decreasing AnyMono
 
 struct CustomDomain{T} <: Domain{T}
@@ -60,7 +60,7 @@ function add_dcprule(f, domain, sign, curvature, monotonicity)
     dcprules_dict[f] = makerule(domain, sign, curvature, monotonicity)
 end
 
-makerule(domain, sign, curvature, monotonicity) = (domain=domain,
+makerule(domain, sign, curvature, monotonicity) = (;domain=domain,
                 sign=sign,
                 curvature=curvature,
                 monotonicity=monotonicity)
@@ -72,23 +72,31 @@ dcprule(f, args...) = dcprules_dict[f], args
 ### Sign ###
 setsign(ex::Symbolic, sign) = setmetadata(ex, Sign, sign)
 setsign(ex, sign) = ex
+
 function getsign(ex::Symbolic)
-    @show ex
-    @show istree(ex)
-    if issym(ex)
+    if hasmetadata(ex, Sign)
         return getmetadata(ex, Sign)
-    elseif istree(ex)
-        return getmetadata.(ex, Ref(Sign))
     end
+    return AnySign
 end
 getsign(ex::Number) = ex < 0 ? Negative : Positive
 getsign(ex::AbstractArray) = Positive
+
 hassign(ex::Symbolic) = hasmetadata(ex, Sign)
 hassign(ex) = ex isa Real
 
+Symbolics.arguments(x::Number) = x
+
 function add_sign(args)
-    @show args
-    signs = getsign.(args)
+    if hassign(args)
+        return getsign(args)
+    end
+    for i in eachindex(args)
+        if istree(args[i])
+            args[i] = propagate_sign(args[i])
+        end
+    end
+    signs = reduce(vcat, getsign.(args))
     if any(==(AnySign), signs)
         AnySign
     elseif all(==(Negative), signs)
@@ -113,34 +121,20 @@ end
 
 function propagate_sign(ex)
     # Step 1: set the sign of all variables to be AnySign
-    r = @rule ~x::issym => hassign(~x) ? ~x : setsign(~x, AnySign)
-    ex = Postwalk(PassThrough(r))(ex)
-
-    # Step 2: set the sign of primitve functions
-    r = @rule ~x::istree  => setsign(~x, (dcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasdcprule(operation(~x))}
-    
-    ex = Postwalk(PassThrough(r))(ex)
-
-    r = @rule ~x::istree  => setsign(~x, (gdcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasgdcprule(operation(~x))}
-    
-    ex = Postwalk(PassThrough(r))(ex)
-
-    SymbolicUtils.inspect(ex, metadata=true)
-    # Step 3: propagate the sign to top level
-    rs = [@rule *(~~x) => setsign(~MATCH, mul_sign(~~x))
-          ]
-    ex = Prewalk(Chain(rs))(ex)
-
-    rs = [
+    rs = [@rule ~x::issym => hassign(~x) ? ~x : setsign(~x, AnySign)
+          @rule ~x::issym  => setsign(~x, (dcprule(~x))[1].sign) where {hasdcprule(~x)}
+          @rule ~x::issym  => setsign(~x, (gdcprule(~x))[1].sign) where {hasgdcprule(~x)}
+          @rule ~x::istree  => setsign(~x, (dcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasdcprule(operation(~x))}
+          @rule ~x::istree  => setsign(~x, (gdcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasgdcprule(operation(~x))}
+          @rule *(~~x) => setsign(~MATCH, mul_sign(~~x))
           @rule +(~~x) => setsign(~MATCH, add_sign(~~x))
-          ]
-    ex = Postwalk(Chain(rs))(ex)
-    # SymbolicUtils.inspect(ex)
-    ex
+        ]
+    ex = Postwalk(RestartedChain(rs))(ex)
+    return ex
 end
 
 ### Curvature ###
-#
+
 setcurvature(ex::Symbolic, curv) = setmetadata(ex, Curvature, curv)
 setcurvature(ex, curv) = ex
 getcurvature(ex::Symbolic) = getmetadata(ex, Curvature)
@@ -152,13 +146,18 @@ function mul_curvature(args)
     # all but one arg is constant
     non_constants = findall(x->issym(x) || istree(x), args)
     constants = findall(x->!issym(x) && !istree(x), args)
-    @assert length(non_constants) <= 1
+    try
+        @assert length(non_constants) <= 1
+    catch
+        @warn "DCP does not support multiple non-constant arguments in multiplication"
+        return UnknownCurvature
+    end
     if !isempty(non_constants)
         expr = args[first(non_constants)]
         curv = find_curvature(expr)
         return if prod(args[constants]) < 0
             # flip
-            curv == Vex ? Cave : curv == Cave ? Vex : curv
+            curv == Convex ? Concave : curv == Concave ? Convex : curv
         else
             curv
         end
@@ -169,15 +168,14 @@ end
 function add_curvature(args)
     curvs = find_curvature.(args)
     all(==(Affine), curvs) && return Affine
-    all(x->x==Vex || x==Affine, curvs) && return Vex
-    all(x->x==Cave || x==Affine, curvs) && return Cave
+    all(x->x==Convex || x==Affine, curvs) && return Convex
+    all(x->x==Concave || x==Affine, curvs) && return Concave
     return UnknownCurvature
 end
 
 function propagate_curvature(ex)
     r = [@rule *(~~x) => setcurvature(~MATCH, mul_curvature(~~x))
          @rule +(~~x) => setcurvature(~MATCH, add_curvature(~~x))
-        #  @rule broadcast(~f, ~~x) => setcurvature(~MATCH, propagate_curvature(propagate_sign(Symbolics.scalarize((~MATCH)[1]))))
          @rule ~x => setcurvature(~x, find_curvature(~x))]
     Postwalk(RestartedChain(r))(ex)
 end
@@ -186,7 +184,7 @@ function get_arg_property(monotonicity, i, args)
     @label start
     if monotonicity isa Function
         monotonicity(args[i])
-    elseif monotonicity isa Tuple
+    elseif monotonicity isa Tuple && i <= length(monotonicity)
         monotonicity = monotonicity[i]
         @goto start
     else
@@ -201,37 +199,41 @@ function find_curvature(ex)
     # SymbolicUtils.inspect(ex)
     if istree(ex)
         f, args = operation(ex), arguments(ex)
-        rule, args = dcprule(f, args...)
+        if hasdcprule(f)
+            rule, args = dcprule(f, args...)
+        else
+            return UnknownCurvature
+        end
         f_curvature = rule.curvature
         f_monotonicity = rule.monotonicity
 
-        if f_curvature == Vex || f_curvature == Affine
+        if f_curvature == Convex || f_curvature == Affine
             if all(enumerate(args)) do (i, arg)
                     arg_curv = find_curvature(arg)
                     m = get_arg_property(f_monotonicity, i, args)
-                    if arg_curv == Vex
+                    if arg_curv == Convex
                         m == Increasing
-                    elseif arg_curv == Cave
+                    elseif arg_curv == Concave
                         m == Decreasing
                     else
                         arg_curv == Affine
                     end
                 end
-                return Vex
+                return Convex
             end
-        elseif f_curvature == Cave || f_curvature == Affine
+        elseif f_curvature == Concave || f_curvature == Affine
             if all(enumerate(args)) do (i, arg)
                     arg_curv = find_curvature(arg)
                     m = f_monotonicity[i]
-                    if arg_curv == Cave
+                    if arg_curv == Concave
                         m == Increasing
-                    elseif arg_curv == Vex
+                    elseif arg_curv == Convex
                         m == Decreasing
                     else
                         arg_curv == Affine
                     end
                 end
-                return Cave
+                return Concave
             end
         elseif f_curvature == Affine
             if all(enumerate(args)) do (i, arg)
