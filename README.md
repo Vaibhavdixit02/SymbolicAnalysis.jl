@@ -1,6 +1,6 @@
 # SymbolicAnalysis.jl
 
-Symbolics-based function property propagation for optimization
+Symbolics based function property propagation for optimization
 
 SymbolicAnalysis is a package for implementating the Disciplined Programming approach to optimization,
 As demonstrated by the [DCP framework](https://dcp.stanford.edu/), and further followups to it for further classes of
