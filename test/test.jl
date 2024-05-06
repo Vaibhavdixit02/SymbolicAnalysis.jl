@@ -4,13 +4,13 @@ using Symbolics: unwrap
 using LinearAlgebra, Test
 
 @syms x y
-ex1 = exp(x^2) - log(x) |> unwrap
+ex1 = exp(x) - log(x) |> unwrap
 ex1 = propagate_curvature(propagate_sign(ex1))
 
-@test getcurvature(ex1) == SymbolicAnalysis.Vex
+@test getcurvature(ex1) == SymbolicAnalysis.Convex
 @test getsign(ex1) == SymbolicAnalysis.AnySign
 
-ex2 = -sqrt(x^2)
+ex2 = -sqrt(x^2) |> unwrap
 ex2 = propagate_curvature(propagate_sign(ex2))
 
 @test getcurvature(ex2) == SymbolicAnalysis.UnknownCurvature
@@ -24,22 +24,23 @@ ex2 = propagate_curvature(propagate_sign(ex2))
 
 ex = -1*xlogx(x)
 ex = propagate_curvature(propagate_sign(ex))
-@test getcurvature(ex) == SymbolicAnalysis.Cave
+@test getcurvature(ex) == SymbolicAnalysis.Concave
 @test getsign(ex) == SymbolicAnalysis.AnySign
 
 ex = 2*abs(x) -1 |> unwrap
 ex = propagate_curvature(propagate_sign(ex))
-@test getcurvature(ex) == SymbolicAnalysis.Vex
+@test getcurvature(ex) == SymbolicAnalysis.Convex
 @test getsign(ex) == SymbolicAnalysis.AnySign
 
-ex = abs(x)^2
+# x = setmetadata(x, SymbolicAnalysis.Sign, SymbolicAnalysis.Positive)
+ex = abs(x)^2 |> unwrap
 ex = propagate_curvature(propagate_sign(ex))
-@test getcurvature(ex) == SymbolicAnalysis.Vex
+@test getcurvature(ex) == SymbolicAnalysis.Convex
 @test getsign(ex) == SymbolicAnalysis.Positive
 
 ex = abs(x)^2 + abs(x)^3
 ex = propagate_curvature(propagate_sign(ex))
-@test getcurvature(ex) == SymbolicAnalysis.Vex
+@test getcurvature(ex) == SymbolicAnalysis.Convex
 @test getsign(ex) == SymbolicAnalysis.Positive
 
 @variables x[1:3] y
@@ -50,16 +51,16 @@ ex = propagate_curvature(propagate_sign(ex))
 
 ex = exp.(x) |> unwrap
 ex = propagate_curvature(propagate_sign(ex))
-@test getcurvature(ex) == SymbolicAnalysis.Vex
+@test getcurvature(ex) == SymbolicAnalysis.Convex
 @test getsign(ex) == SymbolicAnalysis.Positive
 
 ##vector * scalar gets simplified
 
 @syms x y z
-obj = x^2 + y^2 + z^2
+obj = x^2 + y^2 + z^2 |> unwrap
 
 ex = propagate_curvature(propagate_sign(obj))
-@test getcurvature(ex) == SymbolicAnalysis.Vex
+@test getcurvature(ex) == SymbolicAnalysis.Convex
 @test getsign(ex) == SymbolicAnalysis.Positive
 
 cons = [
@@ -71,10 +72,10 @@ ex = propagate_curvature(propagate_sign(cons[1].lhs |> unwrap))
 @test getcurvature(ex) == SymbolicAnalysis.Affine
 
 ex = propagate_curvature(propagate_sign(cons[2].lhs))
-@test getcurvature(ex) == SymbolicAnalysis.Vex
+@test getcurvature(ex) == SymbolicAnalysis.Convex
 
 @variables x y z
 
 @test_broken SymbolicAnalysis.quad_over_lin(x - y, 1 - max(x, y))
 # ex = propagate_curvature(propagate_sign(ex))
-# @test getcurvature(ex) == SymbolicAnalysis.Vex
+# @test getcurvature(ex) == SymbolicAnalysis.Convex

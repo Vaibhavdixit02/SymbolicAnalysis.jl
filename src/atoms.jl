@@ -2,28 +2,6 @@
 
 add_dcprule(+, ℝ, AnySign, Affine, Increasing)
 
-# function dcprule(::typeof(-), x, y)
-#     if y >= 0
-#         if x >= 0 && x >= y 
-#             return makerule((HalfLine(), HalfLine()), Positive, Affine, (Increasing, Decreasing))
-#         elseif x >= 0 && x < y
-#             return makerule((HalfLine(), HalfLine()), Negative, Affine, (Increasing, Decreasing))
-#         elseif x < 0+
-#             return makerule((NegativeHalfLine(), HalfLine()), Negative, Affine, (Increasing, Decreasing))
-#         end
-#     elseif y < 0
-#         if x >= 0
-#             return makerule((HalfLine(), NegativeHalfLine()), Positive, Affine, (Increasing, Decreasing))
-#         else
-#             if x >= y
-#                 return makerule((NegativeHalfLine(), NegativeHalfLine()), Positive, Affine, (Increasing, Decreasing))
-#             else
-#                 return makerule((NegativeHalfLine(), NegativeHalfLine()), Negative, Affine, (Increasing, Decreasing))
-#             end
-#         end
-#     end
-# end
-
 add_dcprule(Base.Ref, ℝ, AnySign, Affine, Increasing)
 
 add_dcprule(dot, (array_domain(ℝ), array_domain(ℝ)), AnySign, Affine, Increasing)
@@ -329,15 +307,12 @@ add_dcprule(inv, HalfLine{Number, :open}(), Positive, Convex, Decreasing)
 add_dcprule(log, HalfLine{Number, :open}(), AnySign, Concave, Increasing)
 
 @register_symbolic Base.log(A::Symbolics.Arr)
-
 add_dcprule(log, array_domain(ℝ, 2), Positive, Concave, Increasing)
 
 @register_symbolic LinearAlgebra.inv(A::Symbolics.Arr)
-
 add_dcprule(inv, semidefinite_domain(), AnySign, Convex, Decreasing)
 
 @register_symbolic LinearAlgebra.sqrt(A::Symbolics.Arr)
-
 add_dcprule(sqrt, semidefinite_domain(), Positive, Concave, Increasing)
 
 add_dcprule(kldivergence, (array_domain(HalfLine{Number, :open},1), array_domain(HalfLine{Number, :open},1)), Positive, Convex, AnyMono)

@@ -1,8 +1,6 @@
-# add_gdcprule(*, SymmetricPositiveDefinite, Positive, GLinear, GIncreasing)
-
 @register_symbolic LinearAlgebra.logdet(X::Union{Symbolics.Arr, Matrix{Num}})
-
 add_gdcprule(LinearAlgebra.logdet, SymmetricPositiveDefinite, Positive, GLinear, GIncreasing)
+
 """
     conjugation(X, B)
 
@@ -22,6 +20,7 @@ end
 
 add_gdcprule(conjugation, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
 
+@register_symbolic LinearAlgebra.tr(X::Union{Symbolics.Arr, Matrix{Num}})
 add_gdcprule(LinearAlgebra.tr, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
 
 add_gdcprule(sum, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
@@ -87,3 +86,5 @@ add_gdcprule(Manifolds.distance, SymmetricPositiveDefinite, Positive, GConvex, G
 add_gdcprule(exp, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
 
 add_gdcprule(sqrt, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
+
+add_gdcprule(SymbolicAnalysis.quad_form, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)

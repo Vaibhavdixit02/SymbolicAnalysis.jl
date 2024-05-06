@@ -121,15 +121,19 @@ end
 
 function propagate_sign(ex)
     # Step 1: set the sign of all variables to be AnySign
-    rs = [@rule ~x::issym => hassign(~x) ? ~x : setsign(~x, AnySign)
-          @rule ~x::issym  => setsign(~x, (dcprule(~x))[1].sign) where {hasdcprule(~x)}
-          @rule ~x::issym  => setsign(~x, (gdcprule(~x))[1].sign) where {hasgdcprule(~x)}
-          @rule ~x::istree  => setsign(~x, (dcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasdcprule(operation(~x))}
-          @rule ~x::istree  => setsign(~x, (gdcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasgdcprule(operation(~x))}
+    rs = [
+          @rule ~x::issym => hassign(~x) ? ~x : setsign(~x, AnySign)
+          @rule ~x::istree => hassign(~x) ? ~x : setsign(~x, AnySign)
+          @rule ~x::issym => setsign(~x, (dcprule(~x))[1].sign) where {hasdcprule(~x)}
+          @rule ~x::issym => setsign(~x, (gdcprule(~x))[1].sign) where {hasgdcprule(~x)}
+          @rule ~x::istree => setsign(~x, (dcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasdcprule(operation(~x))}
+          @rule ~x::istree => setsign(~x, (gdcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasgdcprule(operation(~x))}
           @rule *(~~x) => setsign(~MATCH, mul_sign(~~x))
           @rule +(~~x) => setsign(~MATCH, add_sign(~~x))
         ]
-    ex = Postwalk(RestartedChain(rs))(ex)
+    rc = RestartedChain(rs)
+    ex = Postwalk(rc)(ex)
+    ex = Prewalk(rc)(ex)
     return ex
 end
 
@@ -152,6 +156,7 @@ function mul_curvature(args)
         @warn "DCP does not support multiple non-constant arguments in multiplication"
         return UnknownCurvature
     end
+
     if !isempty(non_constants)
         expr = args[first(non_constants)]
         curv = find_curvature(expr)
@@ -174,10 +179,14 @@ function add_curvature(args)
 end
 
 function propagate_curvature(ex)
-    r = [@rule *(~~x) => setcurvature(~MATCH, mul_curvature(~~x))
+    rs = [@rule *(~~x) => setcurvature(~MATCH, mul_curvature(~~x))
          @rule +(~~x) => setcurvature(~MATCH, add_curvature(~~x))
          @rule ~x => setcurvature(~x, find_curvature(~x))]
-    Postwalk(RestartedChain(r))(ex)
+    rc = RestartedChain(rs)
+    ex = Postwalk(rc)(ex)
+    ex = Prewalk(rc)(ex)
+    SymbolicUtils.inspect(ex, metadata = true)
+    return ex
 end
 
 function get_arg_property(monotonicity, i, args)
@@ -196,11 +205,27 @@ function find_curvature(ex)
     if hascurvature(ex)
         return getcurvature(ex)
     end
-    # SymbolicUtils.inspect(ex)
+
     if istree(ex)
         f, args = operation(ex), arguments(ex)
         if hasdcprule(f)
             rule, args = dcprule(f, args...)
+        elseif Symbol(f) == :*
+            if args[1] isa Number && args[1] > 0
+                return find_curvature(args[2])
+            elseif args[1] isa Number && args[1] < 0
+                argscurv = find_curvature(args[2])
+                if argscurv == Convex
+                    return Concave
+                elseif argscurv == Concave
+                    return Convex
+                else
+                    argscurv
+                end
+            else
+                @warn "DCP does not support multiple non-constant arguments in multiplication"
+                return UnknownCurvature
+            end
         else
             return UnknownCurvature
         end
@@ -211,6 +236,9 @@ function find_curvature(ex)
             if all(enumerate(args)) do (i, arg)
                     arg_curv = find_curvature(arg)
                     m = get_arg_property(f_monotonicity, i, args)
+                    # @show f_monotonicity
+                    # @show arg
+                    # @show m
                     if arg_curv == Convex
                         m == Increasing
                     elseif arg_curv == Concave
