@@ -46,18 +46,18 @@ add_gdcprule(scalar_mat, SymmetricPositiveDefinite, Positive, GConvex, GIncreasi
 
 add_gdcprule(LinearAlgebra.diag, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
 
-"""
-    pinching(X, Ps)
+# """
+#     pinching(X, Ps)
 
-Pinching of a symmetric positive definite matrix `X` by a set of symmetric positive definite matrices `Ps` is defined as `sum(Ps[i]*X*Ps[i])`.
+# Pinching of a symmetric positive definite matrix `X` by a set of symmetric positive definite matrices `Ps` is defined as `sum(Ps[i]*X*Ps[i])`.
 
-# Arguments
-    - `X::Matrix`: A symmetric positive definite matrix.
-    - `Ps::Vector`: A vector of symmetric positive definite matrices.
-"""
-function pinching(X, Ps)
-    return sum(Ps[i]*X*Ps[i] for i in eachindex(Ps); dims = 1)
-end
+# # Arguments
+#     - `X::Matrix`: A symmetric positive definite matrix.
+#     - `Ps::Vector`: A vector of symmetric positive definite matrices.
+# """
+# function pinching(X, Ps)
+#     return sum(Ps[i]*X*Ps[i] for i in eachindex(Ps); dims = 1)
+# end
 
 @register_symbolic pinching(X::Union{Symbolics.Arr, Matrix{Num}}, Ps::Vector{Union{Symbolics.Arr, Matrix{Num}}})
 
@@ -82,9 +82,9 @@ add_gdcprule(sdivergence, SymmetricPositiveDefinite, Positive, GConvex, GIncreas
 @register_symbolic Manifolds.distance(M::Manifolds.SymmetricPositiveDefinite, X::AbstractMatrix, Y::Union{Symbolics.Arr, Matrix{Num}})
 add_gdcprule(Manifolds.distance, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
 
-@register_symbolic LinearAlgebra.exp(X::Union{Symbolics.Arr, Matrix{Num}})
-add_gdcprule(exp, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
+# @register_symbolic LinearAlgebra.exp(X::Union{Symbolics.Arr, Matrix{Num}})
+# add_gdcprule(exp, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
 
-add_gdcprule(sqrt, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
+# add_gdcprule(sqrt, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
 
 add_gdcprule(SymbolicAnalysis.quad_form, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
