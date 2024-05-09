@@ -10,7 +10,6 @@ using DSP, DataStructures
 
 import Symbolics: Symbolic, issym, istree, Term
 using Symbolics.Rewriters
-import Symbolics.Rewriters: FixpointNoCycle
 using SymbolicUtils
 SymbolicUtils.inspect_metadata[] = true
 
