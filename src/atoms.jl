@@ -1,10 +1,10 @@
 ### DCP atom rules
 
-add_dcprule(+, ℝ, AnySign, Affine, Increasing)
+add_dcprule(+, RealLine(), AnySign, Affine, Increasing)
 
-add_dcprule(Base.Ref, ℝ, AnySign, Affine, Increasing)
+add_dcprule(Base.Ref, RealLine(), AnySign, Affine, Increasing)
 
-add_dcprule(dot, (array_domain(ℝ), array_domain(ℝ)), AnySign, Affine, Increasing)
+add_dcprule(dot, (array_domain(RealLine()), array_domain(RealLine())), AnySign, Affine, Increasing)
 
 """
     dotsort(x, y)
@@ -22,7 +22,7 @@ function dotsort(x::AbstractVector, y::AbstractVector)
     dot(sort.(x, y))
 end
 Symbolics.@register_symbolic dotsort(x::AbstractVector, y::AbstractVector)
-add_dcprule(dotsort, (array_domain(ℝ,1), array_domain(ℝ,1)), AnySign, Convex, (AnyMono, increasing_if_positive ∘ minimum))
+add_dcprule(dotsort, (array_domain(RealLine(),1), array_domain(RealLine(),1)), AnySign, Convex, (AnyMono, increasing_if_positive ∘ minimum))
 
 add_dcprule(StatsBase.geomean, array_domain(HalfLine{Number, :open}(),1), Positive, Concave, Increasing)
 add_dcprule(StatsBase.harmmean, array_domain(HalfLine{Number, :open}(),1), Positive, Concave, Increasing)
@@ -65,7 +65,7 @@ function eigsummax(m::Symmetric, k::Int)
     sum(eigvals(m)[end-k+1:end])
 end
 Symbolics.@register_symbolic eigsummax(m::Symmetric, k::Int)
-add_dcprule(eigsummax, (array_domain(ℝ, 2), ℝ), AnySign, Convex, AnyMono)
+add_dcprule(eigsummax, (array_domain(RealLine(), 2), RealLine()), AnySign, Convex, AnyMono)
 
 """
     eigsummin(m::Symmetric, k)
@@ -83,11 +83,11 @@ function eigsummin(m::Symmetric, k::Int)
     sum(eigvals(m)[1:k])
 end
 Symbolics.@register_symbolic eigsummin(m::Symmetric, k::Int)
-add_dcprule(eigsummin, (array_domain(ℝ, 2), ℝ), AnySign, Concave, AnyMono)
+add_dcprule(eigsummin, (array_domain(RealLine(), 2), RealLine()), AnySign, Concave, AnyMono)
 
 add_dcprule(logdet, semidefinite_domain(), AnySign, Concave, AnyMono)
 
-add_dcprule(LogExpFunctions.logsumexp, array_domain(ℝ,2), AnySign, Convex, Increasing)
+add_dcprule(LogExpFunctions.logsumexp, array_domain(RealLine(),2), AnySign, Convex, Increasing)
 
 """
     matrix_frac(x::AbstractVector, P::AbstractMatrix)
@@ -105,15 +105,15 @@ function matrix_frac(x::AbstractVector, P::AbstractMatrix)
     return x' * inv(P) * x
 end
 Symbolics.@register_symbolic AbstractMatrix_frac(x::AbstractVector, P::AbstractMatrix)
-add_dcprule(matrix_frac, (array_domain(ℝ,1), definite_domain()), AnySign, Convex, AnyMono)
+add_dcprule(matrix_frac, (array_domain(RealLine(),1), definite_domain()), AnySign, Convex, AnyMono)
 
-add_dcprule(maximum, array_domain(ℝ), AnySign, Convex, Increasing)
+add_dcprule(maximum, array_domain(RealLine()), AnySign, Convex, Increasing)
 
-add_dcprule(minimum, array_domain(ℝ), AnySign, Concave, Increasing)
+add_dcprule(minimum, array_domain(RealLine()), AnySign, Concave, Increasing)
 
 #incorrect for p<1
-add_dcprule(norm, (array_domain(ℝ), Interval{:closed, :open}(1, Inf)), Positive, Convex, increasing_if_positive)
-add_dcprule(norm, (array_domain(ℝ), Interval{:closed, :open}(0, 1)), Positive, Convex, increasing_if_positive)
+add_dcprule(norm, (array_domain(RealLine()), Interval{:closed, :open}(1, Inf)), Positive, Convex, increasing_if_positive)
+add_dcprule(norm, (array_domain(RealLine()), Interval{:closed, :open}(0, 1)), Positive, Convex, increasing_if_positive)
 
 """
     perspective(f::Function, x, s::Number)
@@ -135,7 +135,7 @@ function perspective(f::Function, x, s::Number)
     s * f(x / s)
 end
 Symbolics.@register_symbolic perspective(f::Function, x, s::Number)
-add_dcprule(perspective, (function_domain(), ℝ, Positive), getsign, getcurvature, AnyMono)
+add_dcprule(perspective, (function_domain(), RealLine(), Positive), getsign, getcurvature, AnyMono)
 
 """
     quad_form(x::AbstractVector, P::AbstractMatrix)
@@ -153,7 +153,7 @@ function quad_form(x::AbstractVector, P::AbstractMatrix)
     return x' * P * x
 end
 Symbolics.@register_symbolic quad_form(x::AbstractVector, P::AbstractMatrix)
-add_dcprule(quad_form, (array_domain(ℝ,1), semidefinite_domain()), Positive, Convex, (increasing_if_positive, Increasing))
+add_dcprule(quad_form, (array_domain(RealLine(),1), semidefinite_domain()), Positive, Convex, (increasing_if_positive, Increasing))
 
 function quad_over_lin(x::AbstractArray, y::Number)
     if y < 0
@@ -182,11 +182,11 @@ end
 
 Symbolics.@register_symbolic quad_over_lin(x::Number, y::Number)
 
-add_dcprule(quad_over_lin, (array_domain(ℝ), HalfLine{Number, :open}()), Positive, Convex, (increasing_if_positive, Decreasing))
+add_dcprule(quad_over_lin, (array_domain(RealLine()), HalfLine{Number, :open}()), Positive, Convex, (increasing_if_positive, Decreasing))
 
-add_dcprule(quad_over_lin, (ℝ, HalfLine{Number, :open}()), Positive, Convex, (increasing_if_positive, Decreasing))
+add_dcprule(quad_over_lin, (RealLine(), HalfLine{Number, :open}()), Positive, Convex, (increasing_if_positive, Decreasing))
 
-add_dcprule(sum, array_domain(ℝ, 2), AnySign, Affine, Increasing)
+add_dcprule(sum, array_domain(RealLine(), 2), AnySign, Affine, Increasing)
 
 """
     sum_largest(x::AbstractMatrix, k)
@@ -201,7 +201,7 @@ function sum_largest(x::AbstractMatrix, k::Integer)
     return sum(sort(vec(x))[end-k:end])
 end
 Symbolics.@register_symbolic sum_largest(x::AbstractMatrix, k::Integer)
-add_dcprule(sum_largest, (array_domain(ℝ,2), ℤ), AnySign, Convex, Increasing)
+add_dcprule(sum_largest, (array_domain(RealLine(),2), ℤ), AnySign, Convex, Increasing)
 
 """
     sum_smallest(x::AbstractMatrix, k)
@@ -217,9 +217,9 @@ function sum_smallest(x::AbstractMatrix, k::Integer)
 end
 
 Symbolics.@register_symbolic sum_smallest(x::AbstractArray, k::Integer)
-add_dcprule(sum_smallest, (array_domain(ℝ,2), ℤ), AnySign, Concave, Increasing)
+add_dcprule(sum_smallest, (array_domain(RealLine(),2), ℤ), AnySign, Concave, Increasing)
 
-add_dcprule(tr, array_domain(ℝ, 2), AnySign, Affine, Increasing)
+add_dcprule(tr, array_domain(RealLine(), 2), AnySign, Affine, Increasing)
 
 """
     trinv(x::AbstractMatrix)
@@ -247,7 +247,7 @@ function tv(x::AbstractVector{<:Number})
     return sum(abs.(x[2:end] - x[1:end-1]))
 end
 Symbolics.@register_symbolic tv(x::AbstractVector{<:Number})
-add_dcprule(tv, array_domain(ℝ,1), Positive, Convex, AnyMono)
+add_dcprule(tv, array_domain(RealLine(),1), Positive, Convex, AnyMono)
 
 """
     tv(x::AbstractVector{<:AbstractMatrix})
@@ -267,16 +267,16 @@ function tv(x::AbstractVector{<:AbstractMatrix})
         )
 end
 Symbolics.@register_symbolic tv(x::AbstractVector{<:AbstractMatrix})
-add_dcprule(tv, array_domain(array_domain(ℝ,2), 1), Positive, Convex, AnyMono)
+add_dcprule(tv, array_domain(array_domain(RealLine(),2), 1), Positive, Convex, AnyMono)
 
 add_dcprule(abs, ℂ, Positive, Convex, increasing_if_positive)
 
 add_dcprule(conj, ℂ, AnySign, Affine, AnyMono)
 
-add_dcprule(exp, ℝ, Positive, Convex, Increasing)
+add_dcprule(exp, RealLine(), Positive, Convex, Increasing)
 
 Symbolics.@register_symbolic LogExpFunctions.xlogx(x::Number)
-add_dcprule(xlogx, ℝ, AnySign, Convex, AnyMono)
+add_dcprule(xlogx, RealLine(), AnySign, Convex, AnyMono)
 
 """
     huber(x, M=1)
@@ -299,7 +299,7 @@ function huber(x::Number, M::Number = 1)
     end
 end
 Symbolics.@register_symbolic huber(x::Number, M::Number)
-add_dcprule(huber, (ℝ, HalfLine()), Positive, Convex, increasing_if_positive)
+add_dcprule(huber, (RealLine(), HalfLine()), Positive, Convex, increasing_if_positive)
 
 add_dcprule(imag, ℂ, AnySign, Affine, AnyMono)
 
@@ -307,7 +307,7 @@ add_dcprule(inv, HalfLine{Number, :open}(), Positive, Convex, Decreasing)
 add_dcprule(log, HalfLine{Number, :open}(), AnySign, Concave, Increasing)
 
 @register_symbolic Base.log(A::Symbolics.Arr)
-add_dcprule(log, array_domain(ℝ, 2), Positive, Concave, Increasing)
+add_dcprule(log, array_domain(RealLine(), 2), Positive, Concave, Increasing)
 
 @register_symbolic LinearAlgebra.inv(A::Symbolics.Arr)
 add_dcprule(inv, semidefinite_domain(), AnySign, Convex, Decreasing)
@@ -329,22 +329,22 @@ function lognormcdf(x::Number)
     return logcdf(Normal, x)
 end
 Symbolics.@register_symbolic lognormcdf(x::Number)
-add_dcprule(lognormcdf, ℝ, Negative, Concave, Increasing)
+add_dcprule(lognormcdf, RealLine(), Negative, Concave, Increasing)
 
 add_dcprule(log1p, Interval{:open, :open}(-1, Inf), Negative, Concave, Increasing)
 
-add_dcprule(logistic, ℝ, Positive, Convex, Increasing)
+add_dcprule(logistic, RealLine(), Positive, Convex, Increasing)
 
-add_dcprule(max, (ℝ, ℝ), AnySign, Convex, Increasing)
-add_dcprule(min, (ℝ, ℝ), AnySign, Concave, Increasing)
+add_dcprule(max, (RealLine(), RealLine()), AnySign, Convex, Increasing)
+add_dcprule(min, (RealLine(), RealLine()), AnySign, Concave, Increasing)
 
 # special cases which depend on arguments:
 function dcprule(::typeof(^), x::Symbolic, i)
     args = (x, i)
     if isone(i)
-        return makerule(ℝ, AnySign, Affine, Increasing), args
+        return makerule(RealLine(), AnySign, Affine, Increasing), args
     elseif isinteger(i) && iseven(i)
-        return makerule(ℝ, Positive, Convex, increasing_if_positive), args
+        return makerule(RealLine(), Positive, Convex, increasing_if_positive), args
     elseif isinteger(i) && isodd(i)
         return makerule(HalfLine(), Positive, Convex, Increasing), args
     elseif i >= 1
@@ -377,31 +377,31 @@ add_dcprule(sqrt, HalfLine(), Positive, Concave, Increasing)
 
 add_dcprule(xexpx, HalfLine, Positive, Convex, Increasing)
 
-add_dcprule(conv, (array_domain(ℝ,1), array_domain(ℝ,1)), AnySign, Affine, AnyMono)
+add_dcprule(conv, (array_domain(RealLine(),1), array_domain(RealLine(),1)), AnySign, Affine, AnyMono)
 
-add_dcprule(cumsum, array_domain(ℝ), AnySign, Affine, Increasing)
+add_dcprule(cumsum, array_domain(RealLine()), AnySign, Affine, Increasing)
 
-add_dcprule(diagm, array_domain(ℝ,1), AnySign, Affine, Increasing)
+add_dcprule(diagm, array_domain(RealLine(),1), AnySign, Affine, Increasing)
 
-add_dcprule(diag, array_domain(ℝ,2), AnySign, Affine, Increasing)
+add_dcprule(diag, array_domain(RealLine(),2), AnySign, Affine, Increasing)
 
-add_dcprule(diff, array_domain(ℝ), AnySign, Affine, Increasing)
+add_dcprule(diff, array_domain(RealLine()), AnySign, Affine, Increasing)
 
-add_dcprule(hcat, array_domain(array_domain(ℝ,1), 1), AnySign, Affine, Increasing)
+add_dcprule(hcat, array_domain(array_domain(RealLine(),1), 1), AnySign, Affine, Increasing)
 
-add_dcprule(kron, (array_domain(ℝ,2), array_domain(ℝ,2)), AnySign, Affine, Increasing)
+add_dcprule(kron, (array_domain(RealLine(),2), array_domain(RealLine(),2)), AnySign, Affine, Increasing)
 
-add_dcprule(reshape, array_domain(ℝ, 2), AnySign, Affine, Increasing)
+add_dcprule(reshape, array_domain(RealLine(), 2), AnySign, Affine, Increasing)
 
-add_dcprule(triu, array_domain(ℝ, 2), AnySign, Affine, Increasing)
+add_dcprule(triu, array_domain(RealLine(), 2), AnySign, Affine, Increasing)
 
-add_dcprule(vec, array_domain(ℝ, 2), AnySign, Affine, Increasing)
+add_dcprule(vec, array_domain(RealLine(), 2), AnySign, Affine, Increasing)
 
-add_dcprule(vcat, array_domain(array_domain(ℝ,1), 1), AnySign, Affine, Increasing)
+add_dcprule(vcat, array_domain(array_domain(RealLine(),1), 1), AnySign, Affine, Increasing)
 
 function dcprule(::typeof(broadcast), f, x...)
     return dcprule(f, x...)
 end
 hasdcprule(::typeof(broadcast)) = true
 
-# add_dcprule(broadcast, (function_domain, array_domain(ℝ)), AnySign, Affine, (AnyMono, AnyMono))
+# add_dcprule(broadcast, (function_domain, array_domain(RealLine())), AnySign, Affine, (AnyMono, AnyMono))

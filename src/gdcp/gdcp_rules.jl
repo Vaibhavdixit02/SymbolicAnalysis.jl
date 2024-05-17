@@ -31,36 +31,6 @@ hasgcurvature(ex::Union{Symbolic, Num}) = hasmetadata(ex, GCurvature)
 hasgcurvature(ex) = ex isa Real
 
 function mul_gcurvature(args)
-    # all but one arg is constant
-    # non_constants = findall(x->issym(x) || istree(x), args)
-    # constants = findall(x->!issym(x) && !istree(x), args)
-    # if !isempty(non_constants)
-    #     expr = args[non_constants]
-    #     curv = find_gcurvature.(expr)
-    #     if !isempty(constants) && prod(args[constants]) < 0
-    #         # flip
-    #         if all(x -> x == GConvex, curv)
-    #             return GConcave
-    #         elseif all(x -> x == GConvex, curv)
-    #             return GConvex
-    #         elseif all(x -> x == GLinear, curv)
-    #             return GLinear
-    #         else
-    #             return GUnknownCurvature
-    #         end
-    #     else
-    #         if all(x -> x == GConvex, curv)
-    #             return GConvex
-    #         elseif all(x -> x == GConcave, curv)
-    #             return GConcave
-    #         elseif all(x -> x == GLinear, curv)
-    #             return GLinear
-    #         else
-    #             GUnknownCurvature
-    #         end
-    #     end
-    # end
-    # return GLinear
     non_constants = findall(x->issym(x) || istree(x), args)
     constants = findall(x->!issym(x) && !istree(x), args)
     try
@@ -96,7 +66,6 @@ function find_gcurvature(ex)
     end
     if istree(ex)
         f, args = operation(ex), arguments(ex)
-        @show f
         if f in keys(gdcprules_dict)
             rule, args = gdcprule(f, args...)
             f_curvature = rule.gcurvature

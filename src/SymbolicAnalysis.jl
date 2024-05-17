@@ -13,6 +13,8 @@ using Symbolics.Rewriters
 using SymbolicUtils
 SymbolicUtils.inspect_metadata[] = true
 
+struct VarDomain end
+
 include("rules.jl")
 include("atoms.jl")
 include("gdcp/gdcp_rules.jl")

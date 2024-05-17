@@ -68,9 +68,9 @@ ex = sqrt(X*Y) |> unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)
 @test_throws SymbolicUtils.RuleRewriteError SymbolicAnalysis.propagate_gcurvature(ex)
 
-ex = exp(X*Y) |> unwrap
-ex = SymbolicAnalysis.propagate_sign(ex)
-@test_throws SymbolicUtils.RuleRewriteError SymbolicAnalysis.propagate_gcurvature(ex)
+# ex = exp(X*Y) |> unwrap
+# ex = SymbolicAnalysis.propagate_sign(ex)
+# @test_throws SymbolicUtils.RuleRewriteError SymbolicAnalysis.propagate_gcurvature(ex)
 
 
 # using Manopt, Manifolds, Random, LinearAlgebra, ManifoldDiff

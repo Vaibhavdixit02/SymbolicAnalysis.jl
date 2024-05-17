@@ -88,3 +88,6 @@ add_gdcprule(Manifolds.distance, SymmetricPositiveDefinite, Positive, GConvex, G
 # add_gdcprule(sqrt, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
 
 add_gdcprule(SymbolicAnalysis.quad_form, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
+
+add_gdcprule(LinearAlgebra.eigmax, SymmetricPositiveDefinite, AnySign, GConvex, GIncreasing)
+

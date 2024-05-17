@@ -4,7 +4,8 @@ using Symbolics: unwrap
 using LinearAlgebra, Test
 
 @syms x y
-ex1 = exp(x) - log(x) |> unwrap
+y = setmetadata(y, SymbolicAnalysis.VarDomain, Symbolics.DomainSets.HalfLine{Number, :open}())
+ex1 = exp(y) - log(y) |> unwrap
 ex1 = propagate_curvature(propagate_sign(ex1))
 
 @test getcurvature(ex1) == SymbolicAnalysis.Convex
