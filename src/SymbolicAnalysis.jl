@@ -10,9 +10,10 @@ using DSP, DataStructures
 
 import Symbolics: Symbolic, issym, istree, Term
 using Symbolics.Rewriters
-
 using SymbolicUtils
 SymbolicUtils.inspect_metadata[] = true
+
+struct VarDomain end
 
 include("rules.jl")
 include("atoms.jl")

@@ -57,7 +57,11 @@ function add_dcprule(f, domain, sign, curvature, monotonicity)
     if !(monotonicity isa Tuple)
         monotonicity = (monotonicity,)
     end
-    dcprules_dict[f] = makerule(domain, sign, curvature, monotonicity)
+    if f in keys(dcprules_dict)
+        dcprules_dict[f] = vcat(dcprules_dict[f], makerule(domain, sign, curvature, monotonicity))
+    else
+        dcprules_dict[f] = makerule(domain, sign, curvature, monotonicity)
+    end
 end
 
 makerule(domain, sign, curvature, monotonicity) = (;domain=domain,
@@ -67,7 +71,39 @@ makerule(domain, sign, curvature, monotonicity) = (;domain=domain,
 
 hasdcprule(f::Function) = haskey(dcprules_dict, f)
 hasdcprule(f) = false
-dcprule(f, args...) = dcprules_dict[f], args
+
+Symbolics.hasmetadata(::Union{Real, Vector{<:Real}}, args...) = false
+
+function dcprule(f, args...)
+    if all(hasmetadata.(args, Ref(VarDomain)))
+        argsdomain = getmetadata.(args, Ref(VarDomain))
+    else
+        if dcprules_dict[f] isa Vector
+            return dcprules_dict[f][1], args 
+        else
+            return dcprules_dict[f], args
+        end
+    end
+
+    if dcprules_dict[f] isa Vector
+        for i in 1:length(dcprules_dict[f])
+            @show (dcprules_dict[f][i].domain isa Domain)
+            if (dcprules_dict[f][i].domain isa Domain) && all(issubset.(argsdomain, Ref(dcprules_dict[f][i].domain)))
+                return dcprules_dict[f][i], args
+            elseif !(dcprules_dict[f][i].domain isa Domain) && all(issubset.(argsdomain, dcprules_dict[f][i].domain))
+                return dcprules_dict[f][i], args
+            else
+                throw(ArgumentError("No DCP rule found for $f with arguments $args with domain $argsdomain"))
+            end
+        end
+    elseif (dcprules_dict[f].domain isa Domain) && all(issubset.(argsdomain, Ref(dcprules_dict[f].domain)))
+        return dcprules_dict[f], args
+    elseif dcprules_dict[f].domain isa Tuple && all(issubset.(argsdomain, dcprules_dict[f].domain))
+        return dcprules_dict[f], args
+    else
+        throw(ArgumentError("No DCP rule found for $f with arguments $args"))
+    end
+end
 
 ### Sign ###
 setsign(ex::Symbolic, sign) = setmetadata(ex, Sign, sign)
@@ -121,15 +157,19 @@ end
 
 function propagate_sign(ex)
     # Step 1: set the sign of all variables to be AnySign
-    rs = [@rule ~x::issym => hassign(~x) ? ~x : setsign(~x, AnySign)
-          @rule ~x::issym  => setsign(~x, (dcprule(~x))[1].sign) where {hasdcprule(~x)}
-          @rule ~x::issym  => setsign(~x, (gdcprule(~x))[1].sign) where {hasgdcprule(~x)}
-          @rule ~x::istree  => setsign(~x, (dcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasdcprule(operation(~x))}
-          @rule ~x::istree  => setsign(~x, (gdcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasgdcprule(operation(~x))}
+    rs = [
+          @rule ~x::issym => setsign(~x, AnySign) where {hassign(~x)}
+          @rule ~x::istree => setsign(~x, AnySign) where {hassign(~x)}
+          @rule ~x::issym => setsign(~x, (dcprule(~x))[1].sign) where {hasdcprule(~x)}
+          @rule ~x::issym => setsign(~x, (gdcprule(~x))[1].sign) where {hasgdcprule(~x)}
+          @rule ~x::istree => setsign(~x, (dcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasdcprule(operation(~x))}
+          @rule ~x::istree => setsign(~x, (gdcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasgdcprule(operation(~x))}
           @rule *(~~x) => setsign(~MATCH, mul_sign(~~x))
           @rule +(~~x) => setsign(~MATCH, add_sign(~~x))
         ]
-    ex = Postwalk(RestartedChain(rs))(ex)
+    rc = RestartedChain(rs)
+    ex = Postwalk(rc)(ex)
+    ex = Prewalk(rc)(ex)
     return ex
 end
 
@@ -152,6 +192,7 @@ function mul_curvature(args)
         @warn "DCP does not support multiple non-constant arguments in multiplication"
         return UnknownCurvature
     end
+
     if !isempty(non_constants)
         expr = args[first(non_constants)]
         curv = find_curvature(expr)
@@ -174,10 +215,14 @@ function add_curvature(args)
 end
 
 function propagate_curvature(ex)
-    r = [@rule *(~~x) => setcurvature(~MATCH, mul_curvature(~~x))
+    rs = [@rule *(~~x) => setcurvature(~MATCH, mul_curvature(~~x))
          @rule +(~~x) => setcurvature(~MATCH, add_curvature(~~x))
          @rule ~x => setcurvature(~x, find_curvature(~x))]
-    Postwalk(RestartedChain(r))(ex)
+    rc = RestartedChain(rs)
+    ex = Postwalk(rc)(ex)
+    ex = Prewalk(rc)(ex)
+    SymbolicUtils.inspect(ex, metadata = true)
+    return ex
 end
 
 function get_arg_property(monotonicity, i, args)
@@ -196,11 +241,27 @@ function find_curvature(ex)
     if hascurvature(ex)
         return getcurvature(ex)
     end
-    # SymbolicUtils.inspect(ex)
+
     if istree(ex)
         f, args = operation(ex), arguments(ex)
         if hasdcprule(f)
             rule, args = dcprule(f, args...)
+        elseif Symbol(f) == :*
+            if args[1] isa Number && args[1] > 0
+                return find_curvature(args[2])
+            elseif args[1] isa Number && args[1] < 0
+                argscurv = find_curvature(args[2])
+                if argscurv == Convex
+                    return Concave
+                elseif argscurv == Concave
+                    return Convex
+                else
+                    argscurv
+                end
+            else
+                @warn "DCP does not support multiple non-constant arguments in multiplication"
+                return UnknownCurvature
+            end
         else
             return UnknownCurvature
         end
@@ -211,6 +272,9 @@ function find_curvature(ex)
             if all(enumerate(args)) do (i, arg)
                     arg_curv = find_curvature(arg)
                     m = get_arg_property(f_monotonicity, i, args)
+                    # @show f_monotonicity
+                    # @show arg
+                    # @show m
                     if arg_curv == Convex
                         m == Increasing
                     elseif arg_curv == Concave

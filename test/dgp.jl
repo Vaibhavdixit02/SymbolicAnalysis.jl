@@ -17,7 +17,7 @@ ex = sum(SymbolicAnalysis.quad_form(x, Siginv) for x in xs) + 1/5*logdet(Sigma) 
 ex = SymbolicAnalysis.propagate_sign(ex)
 ex = SymbolicAnalysis.propagate_gcurvature(ex)
 
-@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GVex
+@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
 
 ##Brascamplieb Problem
 ex = logdet(SymbolicAnalysis.conjugation(A, X)) - logdet(X) |> unwrap
@@ -25,6 +25,8 @@ ex = SymbolicAnalysis.propagate_sign(ex)
 ex = SymbolicAnalysis.propagate_gcurvature(ex)
 
 @test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GLinear
+
+ex = SymbolicAnalysis.tr(SymbolicAnalysis.conjugation(A, X))
 
 # using Convex
 
@@ -41,38 +43,35 @@ ex = SymbolicAnalysis.sdivergence(X, As[1]) |> unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)
 ex = SymbolicAnalysis.propagate_gcurvature(ex)
 
-@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GVex
+@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
 
 ex = sum(SymbolicAnalysis.sdivergence(X, As[i]) for i in 1:5) |> Symbolics.unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)
 ex = SymbolicAnalysis.propagate_gcurvature(ex)
 
-@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GVex
+@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
 
 ex = SymbolicAnalysis.distance(M, As[1], X)^2 |> Symbolics.unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)
 ex = SymbolicAnalysis.propagate_gcurvature(ex)
 
-@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GVex
+@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
 
 ex = sum(Manifolds.distance(M, As[i], X)^2 for i in 1:5) |> Symbolics.unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)
 ex = SymbolicAnalysis.propagate_gcurvature(ex)
 
-@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GVex
+@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
 
 @variables Y[1:5, 1:5]
 ex = sqrt(X*Y) |> unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)
-ex = SymbolicAnalysis.propagate_gcurvature(ex)
+@test_throws SymbolicUtils.RuleRewriteError SymbolicAnalysis.propagate_gcurvature(ex)
 
-@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GVex
+# ex = exp(X*Y) |> unwrap
+# ex = SymbolicAnalysis.propagate_sign(ex)
+# @test_throws SymbolicUtils.RuleRewriteError SymbolicAnalysis.propagate_gcurvature(ex)
 
-ex = exp(X*Y) |> unwrap
-ex = SymbolicAnalysis.propagate_sign(ex)
-ex = SymbolicAnalysis.propagate_gcurvature(ex)
-
-@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GVex
 
 # using Manopt, Manifolds, Random, LinearAlgebra, ManifoldDiff
 # using ManifoldDiff: grad_distance, prox_distance
@@ -163,8 +162,8 @@ prob = OptimizationProblem(optf, A/2, manifold = M)
 
 sqrt(A) ≈ sol.minimizer
 
-# @profview matsqrt(X)
+ex = matsqrt(X) |> unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)
 ex = SymbolicAnalysis.propagate_gcurvature(ex)
 
-@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GVex
+@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
