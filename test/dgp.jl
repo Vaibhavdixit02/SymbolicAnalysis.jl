@@ -13,7 +13,7 @@ A = A*A'
 @variables Sigma[1:5, 1:5]
 xs = [rand(5) for i in 1:2]
 Siginv = inv(Sigma)
-ex = sum(SymbolicAnalysis.quad_form(x, Siginv) for x in xs) + 1/5*logdet(Sigma) |> Symbolics.unwrap
+ex = sum(SymbolicAnalysis.log_quad_form(x, Siginv) for x in xs) + 1/5*logdet(Sigma) |> Symbolics.unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)
 ex = SymbolicAnalysis.propagate_gcurvature(ex)
 
@@ -129,7 +129,7 @@ opt = OptimizationManopt.GradientDescentOptimizer()
 @variables Siginv[1:5, 1:5]
 xs = [rand(5) for i in 1:5]
 Siginv = inv(Sigma)
-obj = 1/length(xs) * sum(SymbolicAnalysis.quad_form(x, Siginv) for x in xs) + 1/5*logdet(Sigma) |> unwrap
+obj = 1/length(xs) * sum(SymbolicAnalysis.log_quad_form(x, Siginv) for x in xs) + 1/5*logdet(Sigma) |> unwrap
 obj = SymbolicAnalysis.propagate_sign(obj)
 obj = SymbolicAnalysis.propagate_gcurvature(obj)
 
@@ -139,7 +139,7 @@ optsys = complete(OptimizationSystem(obj, Siginv, [], name = :opt2))
 s = Float64.(LinearAlgebra.I(5))
 prob = OptimizationProblem(optsys, s)
 
-f(S, p = nothing) = 1/length(xs) * sum(SymbolicAnalysis.quad_form(x, S) for x in xs) + 1/5*logdet(inv(S))
+f(S, p = nothing) = 1/length(xs) * sum(SymbolicAnalysis.log_quad_form(x, S) for x in xs) + 1/5*logdet(inv(S))
 optf = OptimizationFunction(f, Optimization.AutoZygote(); expr = prob.f.expr, sys = prob.f.sys)
 prob = OptimizationProblem(optf, Array(s); manifold = M)
 
@@ -167,3 +167,23 @@ ex = SymbolicAnalysis.propagate_sign(ex)
 ex = SymbolicAnalysis.propagate_gcurvature(ex)
 
 @test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
+
+##Diagonal loading
+@variables X[1:5, 1:5]
+
+ex = tr(inv(X)) + logdet(X) |> unwrap
+ex = SymbolicAnalysis.propagate_sign(ex)
+ex = SymbolicAnalysis.propagate_gcurvature(ex)
+@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
+
+γ = 1/2
+ex = (tr(X + γ*I(5)))^(2) |> unwrap
+ex = SymbolicAnalysis.propagate_sign(ex)
+ex = SymbolicAnalysis.propagate_gcurvature(ex)
+@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
+
+d = 10
+n = 50
+@variables X[1:d, 1:d]
+
+ex = sum(log_quad)

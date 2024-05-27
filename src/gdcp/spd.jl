@@ -89,5 +89,20 @@ add_gdcprule(Manifolds.distance, SymmetricPositiveDefinite, Positive, GConvex, G
 
 add_gdcprule(SymbolicAnalysis.quad_form, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
 
-add_gdcprule(LinearAlgebra.eigmax, SymmetricPositiveDefinite, AnySign, GConvex, GIncreasing)
+add_gdcprule(LinearAlgebra.eigmax, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
 
+"""
+    log_quad_form(y, X)
+
+Log of the quadratic form of a symmetric positive definite matrix `X` and a vector `y` is defined as `log(y'*X*y)`.
+
+# Arguments
+    - `y::Vector`: A vector.
+    - `X::Matrix`: A symmetric positive definite matrix.
+"""
+function log_quad_form(y, X)
+    return log(y'*X*y)
+end
+
+@register_symbolic log_quad_form(y::Vector, X::Union{Symbolics.Arr, Matrix{Num}})
+add_gdcprule(log_quad_form, SymmetricPositiveDefinite, AnySign, GConvex, GIncreasing)

@@ -72,7 +72,7 @@ makerule(domain, sign, curvature, monotonicity) = (;domain=domain,
 hasdcprule(f::Function) = haskey(dcprules_dict, f)
 hasdcprule(f) = false
 
-Symbolics.hasmetadata(::Union{Real, Vector{<:Real}}, args...) = false
+Symbolics.hasmetadata(::Union{Real, AbstractArray{<:Real}}, args...) = false
 
 function dcprule(f, args...)
     if all(hasmetadata.(args, Ref(VarDomain)))
