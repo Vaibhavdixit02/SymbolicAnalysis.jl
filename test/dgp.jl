@@ -186,4 +186,3 @@ d = 10
 n = 50
 @variables X[1:d, 1:d]
 
-ex = sum(log_quad)

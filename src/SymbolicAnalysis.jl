@@ -1,6 +1,5 @@
 module SymbolicAnalysis
 
-using Symbolics
 using DomainSets
 using LinearAlgebra
 using LogExpFunctions
@@ -8,9 +7,10 @@ using StatsBase
 using Distributions
 using DSP, DataStructures
 
+using Symbolics
 import Symbolics: Symbolic, issym, istree, Term
-using Symbolics.Rewriters
-using SymbolicUtils
+using SymbolicUtils, TermInterface
+using SymbolicUtils.Rewriters
 SymbolicUtils.inspect_metadata[] = true
 
 struct VarDomain end

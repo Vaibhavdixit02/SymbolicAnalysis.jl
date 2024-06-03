@@ -31,8 +31,8 @@ hasgcurvature(ex::Union{Symbolic, Num}) = hasmetadata(ex, GCurvature)
 hasgcurvature(ex) = ex isa Real
 
 function mul_gcurvature(args)
-    non_constants = findall(x->issym(x) || istree(x), args)
-    constants = findall(x->!issym(x) && !istree(x), args)
+    non_constants = findall(x->issym(x) || iscall(x), args)
+    constants = findall(x->!issym(x) && !iscall(x), args)
     try
         @assert length(non_constants) <= 1
     catch
@@ -64,7 +64,7 @@ function find_gcurvature(ex)
     if hasgcurvature(ex)
         return getgcurvature(ex)
     end
-    if istree(ex)
+    if iscall(ex)
         f, args = operation(ex), arguments(ex)
         if f in keys(gdcprules_dict)
             rule, args = gdcprule(f, args...)
@@ -151,7 +151,6 @@ function propagate_gcurvature(ex)
          @rule +(~~x) => setgcurvature(~MATCH, add_gcurvature(~~x))
          @rule ~x => setgcurvature(~x, find_gcurvature(~x))
         ]
-    ex= Postwalk(RestartedChain(r))(ex)
-    ex = Prewalk(RestartedChain(r))(ex)
+    ex= Postwalk(Chain(r))(ex)
     return ex
 end

@@ -128,7 +128,7 @@ function add_sign(args)
         return getsign(args)
     end
     for i in eachindex(args)
-        if istree(args[i])
+        if iscall(args[i])
             args[i] = propagate_sign(args[i])
         end
     end
@@ -159,11 +159,11 @@ function propagate_sign(ex)
     # Step 1: set the sign of all variables to be AnySign
     rs = [
           @rule ~x::issym => setsign(~x, AnySign) where {hassign(~x)}
-          @rule ~x::istree => setsign(~x, AnySign) where {hassign(~x)}
+          @rule ~x::iscall => setsign(~x, AnySign) where {hassign(~x)}
           @rule ~x::issym => setsign(~x, (dcprule(~x))[1].sign) where {hasdcprule(~x)}
           @rule ~x::issym => setsign(~x, (gdcprule(~x))[1].sign) where {hasgdcprule(~x)}
-          @rule ~x::istree => setsign(~x, (dcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasdcprule(operation(~x))}
-          @rule ~x::istree => setsign(~x, (gdcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasgdcprule(operation(~x))}
+          @rule ~x::iscall => setsign(~x, (dcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasdcprule(operation(~x))}
+          @rule ~x::iscall => setsign(~x, (gdcprule(operation(~x), arguments(~x)...)[1].sign)) where {hasgdcprule(operation(~x))}
           @rule *(~~x) => setsign(~MATCH, mul_sign(~~x))
           @rule +(~~x) => setsign(~MATCH, add_sign(~~x))
         ]
@@ -184,8 +184,8 @@ hascurvature(ex) = ex isa Real
 
 function mul_curvature(args)
     # all but one arg is constant
-    non_constants = findall(x->issym(x) || istree(x), args)
-    constants = findall(x->!issym(x) && !istree(x), args)
+    non_constants = findall(x->issym(x) || iscall(x), args)
+    constants = findall(x->!issym(x) && !iscall(x), args)
     try
         @assert length(non_constants) <= 1
     catch
@@ -242,7 +242,7 @@ function find_curvature(ex)
         return getcurvature(ex)
     end
 
-    if istree(ex)
+    if iscall(ex)
         f, args = operation(ex), arguments(ex)
         if hasdcprule(f)
             rule, args = dcprule(f, args...)
