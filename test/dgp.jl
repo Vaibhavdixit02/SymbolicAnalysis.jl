@@ -1,4 +1,4 @@
-using Manifolds, Symbolics, SymbolicAnalysis
+using Manifolds, Symbolics, SymbolicAnalysis, LinearAlgebra
 using LinearAlgebra, PDMats
 using Symbolics: unwrap
 using Test, Zygote, ForwardDiff
@@ -95,9 +95,9 @@ ex = SymbolicAnalysis.propagate_sign(ex)
 # m1 = gradient_descent(M, f, gradf1_FD, data2[1]; maxiter=1000)
 
 # ################################
-using Optimization, ModelingToolkit, OptimizationManopt, Manifolds, Random, LinearAlgebra, SymbolicAnalysis
+using Optimization, OptimizationManopt, Symbolics, Manifolds, Random, LinearAlgebra, SymbolicAnalysis
 
-# M = SymmetricPositiveDefinite(5)
+M = SymmetricPositiveDefinite(5)
 m = 100
 σ = 0.005
 q = Matrix{Float64}(LinearAlgebra.I(5)) .+ 2.0
@@ -114,10 +114,6 @@ M = SymmetricPositiveDefinite(5)
 @variables X[1:5, 1:5]
 data2 = [exp(M, q, σ * rand(M; vector_at=q)) for i in 1:m];
 
-obj = sum(SymbolicAnalysis.distance(M, data2[i], X)^2 for i in 1:5)
-optsys = complete(OptimizationSystem(obj, X, [], name = :opt1))
-prob = OptimizationProblem(optsys, data2[1])
-
 f(x, p = nothing) = sum(SymbolicAnalysis.distance(M, data2[i], x)^2 for i in 1:5)
 optf = OptimizationFunction(f, Optimization.AutoZygote(); expr = prob.f.expr, sys = prob.f.sys)
 prob = OptimizationProblem(optf, data2[1]; manifold = M)
@@ -126,39 +122,28 @@ opt = OptimizationManopt.GradientDescentOptimizer()
 @time sol = solve(prob, opt, maxiters = 1000)
 @test sol.objective < 1e-2
 
-@variables Siginv[1:5, 1:5]
+M = SymmetricPositiveDefinite(5)
 xs = [rand(5) for i in 1:5]
-Siginv = inv(Sigma)
-obj = 1/length(xs) * sum(SymbolicAnalysis.log_quad_form(x, Siginv) for x in xs) + 1/5*logdet(Sigma) |> unwrap
-obj = SymbolicAnalysis.propagate_sign(obj)
-obj = SymbolicAnalysis.propagate_gcurvature(obj)
-
-@show SymbolicAnalysis.getgcurvature(obj)
-
-optsys = complete(OptimizationSystem(obj, Siginv, [], name = :opt2))
-s = Float64.(LinearAlgebra.I(5))
-prob = OptimizationProblem(optsys, s)
 
 f(S, p = nothing) = 1/length(xs) * sum(SymbolicAnalysis.log_quad_form(x, S) for x in xs) + 1/5*logdet(inv(S))
+
 optf = OptimizationFunction(f, Optimization.AutoZygote(); expr = prob.f.expr, sys = prob.f.sys)
-prob = OptimizationProblem(optf, Array(s); manifold = M)
+prob = OptimizationProblem(optf, Array{Float64}(LinearAlgebra.I(5)); manifold = M)
 
+opt = OptimizationManopt.GradientDescentOptimizer()
 sol = solve(prob, opt, maxiters = 1000)
-sol.objective
-f(s)
 
-A = randn(5,5)
-A = A*A'
-I = LinearAlgebra.I(5)
+
+A = randn(5,5) #initialize random matrix
+A = A*A' #make it a SPD matrix
+
 function matsqrt(X, p = nothing)
-    return SymbolicAnalysis.sdivergence(X, A) + SymbolicAnalysis.sdivergence(X, Matrix(I))
+    return SymbolicAnalysis.sdivergence(X, A) + SymbolicAnalysis.sdivergence(X, Matrix{Float64}(LinearAlgebra.I(5))) 
 end
 
-@time sqrt(A)
-
-optf = OptimizationFunction(matsqrt, Optimization.AutoZygote())
+optf = OptimizationFunction(matsqrt, Optimization.AutoForwardDiff())
 prob = OptimizationProblem(optf, A/2, manifold = M)
-@time sol = solve(prob, opt, maxiters = 1000)
+sol = solve(prob, GradientDescentOptimizer(), maxiters = 1000)
 
 sqrt(A) ≈ sol.minimizer
 

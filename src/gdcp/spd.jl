@@ -59,7 +59,7 @@ add_gdcprule(LinearAlgebra.diag, SymmetricPositiveDefinite, Positive, GConvex, G
 #     return sum(Ps[i]*X*Ps[i] for i in eachindex(Ps); dims = 1)
 # end
 
-@register_symbolic pinching(X::Union{Symbolics.Arr, Matrix{Num}}, Ps::Vector{Union{Symbolics.Arr, Matrix{Num}}})
+@register_symbolic pinching(X::Matrix{Num}, Ps::Vector{Union{Symbolics.Arr, Matrix{Num}}})
 
 add_gdcprule(pinching, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
 
@@ -76,7 +76,7 @@ function sdivergence(X, Y)
     return logdet((X+Y)/2) - 1/2*logdet(X*Y)
 end
 
-@register_symbolic sdivergence(X::Union{Symbolics.Arr, Matrix{Num}}, Y::Matrix)
+@register_symbolic sdivergence(X::Matrix{Num}, Y::Matrix)
 add_gdcprule(sdivergence, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
 
 @register_symbolic Manifolds.distance(M::Manifolds.SymmetricPositiveDefinite, X::AbstractMatrix, Y::Union{Symbolics.Arr, Matrix{Num}})
@@ -105,4 +105,8 @@ function log_quad_form(y, X)
 end
 
 @register_symbolic log_quad_form(y::Vector, X::Union{Symbolics.Arr, Matrix{Num}})
-add_gdcprule(log_quad_form, SymmetricPositiveDefinite, AnySign, GConvex, GIncreasing)
+add_gdcprule(log_quad_form, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
+
+add_gdcprule(inv, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
+
+# add_gdcprule(diag)

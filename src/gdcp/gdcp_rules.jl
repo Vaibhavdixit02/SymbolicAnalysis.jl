@@ -93,13 +93,12 @@ function find_gcurvature(ex)
         else
             return GUnknownCurvature
         end
-        @show ex
-        @show f_curvature
+
         if f_curvature == Convex || f_curvature == Affine
             if all(enumerate(args)) do (i, arg)
                     arg_curv = find_gcurvature(arg)
                     m = get_arg_property(f_monotonicity, i, args)
-                    @show arg
+                    # @show arg
                     if arg_curv == GConvex
                         m == Increasing
                     elseif arg_curv == GConcave

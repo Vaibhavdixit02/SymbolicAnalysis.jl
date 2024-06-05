@@ -8,8 +8,8 @@ using Distributions
 using DSP, DataStructures
 
 using Symbolics
-import Symbolics: Symbolic, issym, istree, Term
-using SymbolicUtils, TermInterface
+import Symbolics: Symbolic, issym, Term
+using SymbolicUtils: iscall
 using SymbolicUtils.Rewriters
 SymbolicUtils.inspect_metadata[] = true
 

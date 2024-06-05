@@ -221,7 +221,7 @@ function propagate_curvature(ex)
     rc = RestartedChain(rs)
     ex = Postwalk(rc)(ex)
     ex = Prewalk(rc)(ex)
-    SymbolicUtils.inspect(ex, metadata = true)
+    # SymbolicUtils.inspect(ex, metadata = true)
     return ex
 end
 
