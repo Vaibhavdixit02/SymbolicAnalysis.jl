@@ -151,5 +151,6 @@ function propagate_gcurvature(ex, M::SymmetricPositiveDefinite)
          @rule ~x => setgcurvature(~x, find_gcurvature(~x))
         ]
     ex= Postwalk(Chain(r))(ex)
+    ex= Prewalk(Chain(r))(ex)
     return ex
 end

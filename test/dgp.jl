@@ -47,19 +47,19 @@ As = [As[i]*As[i]' for i in 1:5]
 
 ex = SymbolicAnalysis.sdivergence(X, As[1]) |> unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)
-ex = SymbolicAnalysis.propagate_gcurvature(ex)
+ex = SymbolicAnalysis.propagate_gcurvature(ex, M)
 
 @test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
 
 ex = sum(SymbolicAnalysis.sdivergence(X, As[i]) for i in 1:5) |> Symbolics.unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)
-ex = SymbolicAnalysis.propagate_gcurvature(ex)
+ex = SymbolicAnalysis.propagate_gcurvature(ex, M)
 
 @test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
 
 ex = SymbolicAnalysis.distance(M, As[1], X)^2 |> Symbolics.unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)
-ex = SymbolicAnalysis.propagate_gcurvature(ex)
+ex = SymbolicAnalysis.propagate_gcurvature(ex, M)
 
 @test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
 
@@ -75,7 +75,7 @@ println(SymbolicAnalysis.getgcurvature(ex))
 @variables Y[1:5, 1:5]
 ex = sqrt(X*Y) |> unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)
-@test_throws SymbolicUtils.RuleRewriteError SymbolicAnalysis.propagate_gcurvature(ex)
+@test_throws SymbolicUtils.RuleRewriteError SymbolicAnalysis.propagate_gcurvature(ex, M)
 
 # ex = exp(X*Y) |> unwrap
 # ex = SymbolicAnalysis.propagate_sign(ex)
@@ -158,7 +158,7 @@ sqrt(A) ≈ sol.minimizer
 
 ex = matsqrt(X) |> unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)
-ex = SymbolicAnalysis.propagate_gcurvature(ex)
+ex = SymbolicAnalysis.propagate_gcurvature(ex, M)
 
 @test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
 
@@ -167,13 +167,13 @@ ex = SymbolicAnalysis.propagate_gcurvature(ex)
 
 ex = tr(inv(X)) + logdet(X) |> unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)
-ex = SymbolicAnalysis.propagate_gcurvature(ex)
+ex = SymbolicAnalysis.propagate_gcurvature(ex, M)
 @test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
 
 γ = 1/2
 ex = (tr(X + γ*I(5)))^(2) |> unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)
-ex = SymbolicAnalysis.propagate_gcurvature(ex)
+ex = SymbolicAnalysis.propagate_gcurvature(ex, M)
 @test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
 
 d = 10
