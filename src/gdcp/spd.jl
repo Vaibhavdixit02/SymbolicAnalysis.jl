@@ -107,6 +107,6 @@ end
 @register_symbolic log_quad_form(y::Vector, X::Union{Symbolics.Arr, Matrix{Num}})
 add_gdcprule(log_quad_form, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
 
-add_gdcprule(inv, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
+add_gdcprule(inv, SymmetricPositiveDefinite, Positive, GConvex, GDecreasing)
 
 # add_gdcprule(diag)

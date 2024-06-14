@@ -144,7 +144,7 @@ function find_gcurvature(ex)
     end
 end
 
-function propagate_gcurvature(ex)
+function propagate_gcurvature(ex, M::SymmetricPositiveDefinite)
     r = [
          @rule *(~~x) => setgcurvature(~MATCH, mul_gcurvature(~~x))
          @rule +(~~x) => setgcurvature(~MATCH, add_gcurvature(~~x))

@@ -12,19 +12,25 @@ A = A*A'
 
 @variables Sigma[1:5, 1:5]
 xs = [rand(5) for i in 1:2]
-Siginv = inv(Sigma)
-ex = sum(SymbolicAnalysis.log_quad_form(x, Siginv) for x in xs) + 1/5*logdet(Sigma) |> Symbolics.unwrap
+ex = sum(SymbolicAnalysis.log_quad_form(x, inv(Sigma)) for x in xs) + 1/5*logdet(Sigma) |> Symbolics.unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)
-ex = SymbolicAnalysis.propagate_gcurvature(ex)
+ex = SymbolicAnalysis.propagate_gcurvature(ex, M)
+println(SymbolicAnalysis.getgcurvature(ex))
 
 @test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
 
 ##Brascamplieb Problem
-ex = logdet(SymbolicAnalysis.conjugation(A, X)) - logdet(X) |> unwrap
-ex = SymbolicAnalysis.propagate_sign(ex)
-ex = SymbolicAnalysis.propagate_gcurvature(ex)
+M = SymmetricPositiveDefinite(5)
+objective_expr = logdet(SymbolicAnalysis.conjugation(A, X)) - logdet(X) |> unwrap
+objective_expr = SymbolicAnalysis.propagate_sign(objective_expr);
 
-@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GLinear
+objective_expr = SymbolicAnalysis.propagate_curvature(objective_expr)
+println(SymbolicAnalysis.getcurvature(objective_expr))
+
+objective_expr = SymbolicAnalysis.propagate_gcurvature(objective_expr, M)
+println(SymbolicAnalysis.getgcurvature(objective_expr))
+
+@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
 
 ex = SymbolicAnalysis.tr(SymbolicAnalysis.conjugation(A, X))
 
@@ -57,11 +63,14 @@ ex = SymbolicAnalysis.propagate_gcurvature(ex)
 
 @test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
 
-ex = sum(Manifolds.distance(M, As[i], X)^2 for i in 1:5) |> Symbolics.unwrap
-ex = SymbolicAnalysis.propagate_sign(ex)
-ex = SymbolicAnalysis.propagate_gcurvature(ex)
+M = SymmetricPositiveDefinite(5)
+objective_expr = sum(Manifolds.distance(M, As[i], X)^2 for i in 1:5) |> Symbolics.unwrap
+objective_expr = SymbolicAnalysis.propagate_sign(objective_expr);
 
-@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
+objective_expr = SymbolicAnalysis.propagate_curvature(objective_expr)
+println(SymbolicAnalysis.getcurvature(objective_expr))
+objective_expr = SymbolicAnalysis.propagate_gcurvature(objective_expr, M)
+println(SymbolicAnalysis.getgcurvature(ex))
 
 @variables Y[1:5, 1:5]
 ex = sqrt(X*Y) |> unwrap
