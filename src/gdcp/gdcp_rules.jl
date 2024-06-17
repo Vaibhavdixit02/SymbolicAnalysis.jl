@@ -66,10 +66,20 @@ function find_gcurvature(ex)
     end
     if iscall(ex)
         f, args = operation(ex), arguments(ex)
-        if f in keys(gdcprules_dict)
+        if f in keys(gdcprules_dict) && !any(iscall.(args))
             rule, args = gdcprule(f, args...)
             f_curvature = rule.gcurvature
             f_monotonicity = rule.gmonotonicity
+        elseif f == LinearAlgebra.logdet
+            if operation(args[1]) == conjugation ||
+                operation(args[1]) == LinearAlgebra.diag ||
+                Symbol(operation(args[1])) == :+
+                return GConvex
+            else
+                return GUnknownCurvature
+            end
+        elseif f == log && operation(args[1]) == LinearAlgebra.tr
+            return GConvex
         elseif f in keys(dcprules_dict) || Symbol(f) == :^
             rule, args = dcprule(f, args...)
             f_curvature = rule.curvature
@@ -87,7 +97,7 @@ function find_gcurvature(ex)
                     argscurv
                 end
             else
-                @warn "DCP does not support multiple non-constant arguments in multiplication"
+                @warn "Disciplined Programming does not support multiple non-constant arguments in multiplication"
                 return UnknownGCurvature
             end
         else
@@ -138,7 +148,7 @@ function find_gcurvature(ex)
     elseif hasfield(typeof(ex), :val) && operation(ex.val) in keys(gdcprules_dict)
         f, args = operation(ex.val), arguments(ex.val)
         rule, args = gdcprule(f, args...)
-        return rule.curvature
+        return rule.gcurvature
     else
         return GLinear
     end

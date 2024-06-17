@@ -155,17 +155,17 @@ end
 Symbolics.@register_symbolic quad_form(x::AbstractVector, P::AbstractMatrix)
 add_dcprule(quad_form, (array_domain(RealLine(),1), semidefinite_domain()), Positive, Convex, (increasing_if_positive, Increasing))
 
-function quad_over_lin(x::AbstractArray, y::Number)
+function quad_over_lin(x::AbstractArray, y::Real)
     if y < 0
         throw(DomainError(y, "y must be positive"))
     end
     return sum(x.^2) / y
 end
 
-Symbolics.@register_symbolic quad_over_lin(x::Symbolics.Arr, y::Num)
+Symbolics.@register_symbolic quad_over_lin(x::Symbolics.Arr, y::Num) false
 
 """
-    quad_over_lin(x, y::Number)
+    quad_over_lin(x::Real, y::Real)
 
 Returns the quadratic over linear form `x^2 / y`.
 
@@ -180,7 +180,7 @@ function quad_over_lin(x::Real, y::Real)
     return x^2 / y
 end
 
-Symbolics.@register_symbolic quad_over_lin(x::Number, y::Number)
+Symbolics.@register_symbolic quad_over_lin(x::Num, y::Num) false
 
 add_dcprule(quad_over_lin, (array_domain(RealLine()), HalfLine{Number, :open}()), Positive, Convex, (increasing_if_positive, Decreasing))
 

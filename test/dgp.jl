@@ -10,22 +10,35 @@ M = Manifolds.SymmetricPositiveDefinite(5)
 A = rand(5,5)
 A = A*A'
 
+ex = SymbolicAnalysis.logdet(SymbolicAnalysis.conjugation(X, A)) |> unwrap
+ex = propagate_sign(ex)
+ex = propagate_curvature(ex)
+ex = propagate_gcurvature(ex, M)
+SymbolicAnalysis.getcurvature(ex)
+SymbolicAnalysis.getgcurvature(ex)
+
+ex = SymbolicAnalysis.logdet(tr(X)) |> unwrap
+ex = propagate_sign(ex)
+ex = propagate_curvature(ex)
+ex = propagate_gcurvature(ex, M)
+SymbolicAnalysis.getgcurvature(ex)
+SymbolicAnalysis.getcurvature(ex)
+
 @variables Sigma[1:5, 1:5]
 xs = [rand(5) for i in 1:2]
 ex = sum(SymbolicAnalysis.log_quad_form(x, inv(Sigma)) for x in xs) + 1/5*logdet(Sigma) |> Symbolics.unwrap
-ex = SymbolicAnalysis.propagate_sign(ex)
-ex = SymbolicAnalysis.propagate_gcurvature(ex, M)
-println(SymbolicAnalysis.getgcurvature(ex))
+ex = propagate_sign(ex)
+ex = propagate_curvature(ex)
+ex = propagate_gcurvature(ex, M)
 
 @test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
+
+@test analyze(ex, M).gcurvature == SymbolicAnalysis.GConvex
 
 ##Brascamplieb Problem
 M = SymmetricPositiveDefinite(5)
 objective_expr = logdet(SymbolicAnalysis.conjugation(A, X)) - logdet(X) |> unwrap
-objective_expr = SymbolicAnalysis.propagate_sign(objective_expr);
-
-objective_expr = SymbolicAnalysis.propagate_curvature(objective_expr)
-println(SymbolicAnalysis.getcurvature(objective_expr))
+println(analyze(ex, M))
 
 objective_expr = SymbolicAnalysis.propagate_gcurvature(objective_expr, M)
 println(SymbolicAnalysis.getgcurvature(objective_expr))
@@ -33,6 +46,11 @@ println(SymbolicAnalysis.getgcurvature(objective_expr))
 @test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
 
 ex = SymbolicAnalysis.tr(SymbolicAnalysis.conjugation(A, X))
+ex = propagate_sign(ex)
+ex = propagate_curvature(ex)
+ex = propagate_gcurvature(ex, M)
+
+@test analyze(ex, M) == SymbolicAnalysis.GConvex
 
 # using Convex
 
@@ -65,10 +83,7 @@ ex = SymbolicAnalysis.propagate_gcurvature(ex, M)
 
 M = SymmetricPositiveDefinite(5)
 objective_expr = sum(Manifolds.distance(M, As[i], X)^2 for i in 1:5) |> Symbolics.unwrap
-objective_expr = SymbolicAnalysis.propagate_sign(objective_expr);
-
-objective_expr = SymbolicAnalysis.propagate_curvature(objective_expr)
-println(SymbolicAnalysis.getcurvature(objective_expr))
+println(analyze(ex, M))
 objective_expr = SymbolicAnalysis.propagate_gcurvature(objective_expr, M)
 println(SymbolicAnalysis.getgcurvature(ex))
 
@@ -166,17 +181,18 @@ ex = SymbolicAnalysis.propagate_gcurvature(ex, M)
 @variables X[1:5, 1:5]
 
 ex = tr(inv(X)) + logdet(X) |> unwrap
-ex = SymbolicAnalysis.propagate_sign(ex)
-ex = SymbolicAnalysis.propagate_gcurvature(ex, M)
-@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
+@test analyze(ex, M).gcurvature == SymbolicAnalysis.GConvex
 
 γ = 1/2
 ex = (tr(X + γ*I(5)))^(2) |> unwrap
-ex = SymbolicAnalysis.propagate_sign(ex)
-ex = SymbolicAnalysis.propagate_gcurvature(ex, M)
-@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
+@test analyze(ex, M).gcurvature == SymbolicAnalysis.GConvex
 
 d = 10
 n = 50
 @variables X[1:d, 1:d]
 
+@variables x[1:5] X[1:5, 1:5]
+ex = SymbolicAnalysis.log_quad_form(x, inv(X)) |> unwrap
+ex = SymbolicAnalysis.propagate_sign(ex)
+ex = SymbolicAnalysis.propagate_gcurvature(ex, M)
+SymbolicAnalysis.getgcurvature(ex)

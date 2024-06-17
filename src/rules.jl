@@ -244,6 +244,7 @@ function find_curvature(ex)
 
     if iscall(ex)
         f, args = operation(ex), arguments(ex)
+        @show f
         if hasdcprule(f)
             rule, args = dcprule(f, args...)
         elseif Symbol(f) == :*
@@ -268,7 +269,14 @@ function find_curvature(ex)
         f_curvature = rule.curvature
         f_monotonicity = rule.monotonicity
 
-        if f_curvature == Convex || f_curvature == Affine
+        if f_curvature == Affine
+            if all(enumerate(args)) do (i, arg)
+                    arg_curv = find_curvature(arg)
+                    arg_curv == Affine
+                end
+                return Affine
+            end
+        elseif f_curvature == Convex || f_curvature == Affine
             if all(enumerate(args)) do (i, arg)
                     arg_curv = find_curvature(arg)
                     m = get_arg_property(f_monotonicity, i, args)
@@ -298,13 +306,6 @@ function find_curvature(ex)
                     end
                 end
                 return Concave
-            end
-        elseif f_curvature == Affine
-            if all(enumerate(args)) do (i, arg)
-                    arg_curv = find_curvature(arg)
-                    arg_curv == Affine
-                end
-                return Affine
             end
         end
         return UnknownCurvature

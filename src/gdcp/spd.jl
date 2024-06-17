@@ -14,7 +14,7 @@ function conjugation(X, B)
     return B'*X*B
 end
 
-@register_array_symbolic conjugation(X::Matrix, B::Union{Symbolics.Arr, Matrix{Num}}) begin
+@register_array_symbolic conjugation(X::Union{Symbolics.Arr, Matrix{Num}}, B::Matrix) begin
     size=(size(B,2), size(B,2))
 end
 
@@ -59,9 +59,9 @@ add_gdcprule(LinearAlgebra.diag, SymmetricPositiveDefinite, Positive, GConvex, G
 #     return sum(Ps[i]*X*Ps[i] for i in eachindex(Ps); dims = 1)
 # end
 
-@register_symbolic pinching(X::Matrix{Num}, Ps::Vector{Union{Symbolics.Arr, Matrix{Num}}})
+# @register_symbolic pinching(X::Matrix{Num}, Ps::Vector{Union{Symbolics.Arr, Matrix{Num}}})
 
-add_gdcprule(pinching, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
+# add_gdcprule(pinching, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
 
 """
     sdivergence(X, Y)
