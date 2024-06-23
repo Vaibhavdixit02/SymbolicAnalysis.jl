@@ -10,14 +10,14 @@ M = Manifolds.SymmetricPositiveDefinite(5)
 A = rand(5,5)
 A = A*A'
 
-ex = SymbolicAnalysis.logdet(SymbolicAnalysis.conjugation(X, A)) |> unwrap
+ex = SymbolicAnalysis.logdet(SymbolicAnalysis.conjugation(inv(X), A)) |> unwrap
 ex = propagate_sign(ex)
 ex = propagate_curvature(ex)
 ex = propagate_gcurvature(ex, M)
 SymbolicAnalysis.getcurvature(ex)
 SymbolicAnalysis.getgcurvature(ex)
 
-ex = SymbolicAnalysis.logdet(tr(X)) |> unwrap
+ex = SymbolicAnalysis.logdet(tr(inv(X))) |> unwrap
 ex = propagate_sign(ex)
 ex = propagate_curvature(ex)
 ex = propagate_gcurvature(ex, M)
@@ -37,8 +37,10 @@ ex = propagate_gcurvature(ex, M)
 
 ##Brascamplieb Problem
 M = SymmetricPositiveDefinite(5)
-objective_expr = logdet(SymbolicAnalysis.conjugation(A, X)) - logdet(X) |> unwrap
-println(analyze(ex, M))
+objective_expr = logdet(SymbolicAnalysis.conjugation(X, A)) - logdet(X) |> unwrap
+objective_expr = SymbolicAnalysis.propagate_sign(objective_expr)
+analyze_res = analyze(objective_expr, M)
+println(analyze_res.gcurvature)
 
 objective_expr = SymbolicAnalysis.propagate_gcurvature(objective_expr, M)
 println(SymbolicAnalysis.getgcurvature(objective_expr))
@@ -83,9 +85,12 @@ ex = SymbolicAnalysis.propagate_gcurvature(ex, M)
 
 M = SymmetricPositiveDefinite(5)
 objective_expr = sum(Manifolds.distance(M, As[i], X)^2 for i in 1:5) |> Symbolics.unwrap
-println(analyze(ex, M))
+objective_expr = SymbolicAnalysis.propagate_sign(objective_expr)
 objective_expr = SymbolicAnalysis.propagate_gcurvature(objective_expr, M)
-println(SymbolicAnalysis.getgcurvature(ex))
+println(SymbolicAnalysis.getgcurvature(objective_expr))
+
+analyze_res = analyze(objective_expr, M)
+println(analyze_res.gcurvature)
 
 @variables Y[1:5, 1:5]
 ex = sqrt(X*Y) |> unwrap
@@ -126,24 +131,14 @@ m = 100
 σ = 0.005
 q = Matrix{Float64}(LinearAlgebra.I(5)) .+ 2.0
 
-# f(M, x, p = nothing) = sum(SymbolicAnalysis.distance(M, data2[i], x)^2 for i in 1:m)
-
-
-# optf = OptimizationFunction(f, Optimization.AutoForwardDiff())
-# opt = OptimizationManopt.GradientDescentOptimizer()
-# prob = OptimizationProblem(optf, data2[2]; manifold = M)
-# sol = solve(prob, opt)
-
-M = SymmetricPositiveDefinite(5)
-@variables X[1:5, 1:5]
 data2 = [exp(M, q, σ * rand(M; vector_at=q)) for i in 1:m];
 
 f(x, p = nothing) = sum(SymbolicAnalysis.distance(M, data2[i], x)^2 for i in 1:5)
-optf = OptimizationFunction(f, Optimization.AutoZygote(); expr = prob.f.expr, sys = prob.f.sys)
+optf = OptimizationFunction(f, Optimization.AutoZygote())
 prob = OptimizationProblem(optf, data2[1]; manifold = M)
 
 opt = OptimizationManopt.GradientDescentOptimizer()
-@time sol = solve(prob, opt, maxiters = 1000)
+@time sol = solve(prob, opt, maxiters = 10)
 @test sol.objective < 1e-2
 
 M = SymmetricPositiveDefinite(5)
@@ -155,7 +150,7 @@ optf = OptimizationFunction(f, Optimization.AutoZygote(); expr = prob.f.expr, sy
 prob = OptimizationProblem(optf, Array{Float64}(LinearAlgebra.I(5)); manifold = M)
 
 opt = OptimizationManopt.GradientDescentOptimizer()
-sol = solve(prob, opt, maxiters = 1000)
+sol = solve(prob, opt, maxiters = 10)
 
 
 A = randn(5,5) #initialize random matrix

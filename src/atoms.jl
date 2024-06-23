@@ -64,7 +64,7 @@ function eigsummax(m::Symmetric, k::Int)
     end
     sum(eigvals(m)[end-k+1:end])
 end
-Symbolics.@register_symbolic eigsummax(m::Symmetric, k::Int)
+Symbolics.@register_symbolic eigsummax(m::Matrix{Num}, k::Int)
 add_dcprule(eigsummax, (array_domain(RealLine(), 2), RealLine()), AnySign, Convex, AnyMono)
 
 """
@@ -82,7 +82,7 @@ function eigsummin(m::Symmetric, k::Int)
     end
     sum(eigvals(m)[1:k])
 end
-Symbolics.@register_symbolic eigsummin(m::Symmetric, k::Int)
+Symbolics.@register_symbolic eigsummin(m::Matrix{Num}, k::Int)
 add_dcprule(eigsummin, (array_domain(RealLine(), 2), RealLine()), AnySign, Concave, AnyMono)
 
 add_dcprule(logdet, semidefinite_domain(), AnySign, Concave, AnyMono)

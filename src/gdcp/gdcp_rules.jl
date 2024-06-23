@@ -80,6 +80,22 @@ function find_gcurvature(ex)
             end
         elseif f == log && operation(args[1]) == LinearAlgebra.tr
             return GConvex
+        elseif f in keys(gdcprules_dict) && any(iscall.(args))
+            for i in eachindex(args)
+                if iscall(args[i])
+                    if operation(args[i]) == inv
+                        rule, args = gdcprule(f, args...)
+                        f_curvature = rule.gcurvature
+                        f_monotonicity = if rule.gmonotonicity == GIncreasing
+                                            GDecreasing
+                                        elseif rule.gmonotonicity == GDecreasing
+                                            GIncreasing
+                                        else
+                                            GAnyMono
+                                        end
+                    end
+                end
+            end
         elseif f in keys(dcprules_dict) || Symbol(f) == :^
             rule, args = dcprule(f, args...)
             f_curvature = rule.curvature

@@ -80,7 +80,7 @@ end
 add_gdcprule(sdivergence, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
 
 @register_symbolic Manifolds.distance(M::Manifolds.SymmetricPositiveDefinite, X::AbstractMatrix, Y::Union{Symbolics.Arr, Matrix{Num}})
-add_gdcprule(Manifolds.distance, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
+add_gdcprule(Manifolds.distance, SymmetricPositiveDefinite, Positive, GConvex, GAnyMono)
 
 # @register_symbolic LinearAlgebra.exp(X::Union{Symbolics.Arr, Matrix{Num}})
 # add_gdcprule(exp, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
@@ -109,4 +109,13 @@ add_gdcprule(log_quad_form, SymmetricPositiveDefinite, Positive, GConvex, GIncre
 
 add_gdcprule(inv, SymmetricPositiveDefinite, Positive, GConvex, GDecreasing)
 
-# add_gdcprule(diag)
+add_gdcprule(diag, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
+
+add_gdcprule(eigsummax, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
+
+function schatten_norm(X::AbstractMatrix, p::Int = 2)
+    return norm(eigvals(X), p)
+end
+
+@register_symbolic schatten_norm(X::Matrix{Num}, p::Int)
+add_gdcprule(schatten_norm, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)

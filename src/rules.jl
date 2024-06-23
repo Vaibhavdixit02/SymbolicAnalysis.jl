@@ -244,7 +244,7 @@ function find_curvature(ex)
 
     if iscall(ex)
         f, args = operation(ex), arguments(ex)
-        @show f
+        # @show f
         if hasdcprule(f)
             rule, args = dcprule(f, args...)
         elseif Symbol(f) == :*
