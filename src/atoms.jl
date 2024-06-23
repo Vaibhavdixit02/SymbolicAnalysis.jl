@@ -155,14 +155,14 @@ end
 Symbolics.@register_symbolic quad_form(x::AbstractVector, P::AbstractMatrix)
 add_dcprule(quad_form, (array_domain(RealLine(),1), semidefinite_domain()), Positive, Convex, (increasing_if_positive, Increasing))
 
-function quad_over_lin(x::AbstractArray, y::Real)
-    if y < 0
+function quad_over_lin(x::Vector{<:Real}, y::Real)
+    if getsign(y) == Negative
         throw(DomainError(y, "y must be positive"))
     end
     return sum(x.^2) / y
 end
 
-Symbolics.@register_symbolic quad_over_lin(x::Symbolics.Arr, y::Num) false
+Symbolics.@register_symbolic quad_over_lin(x::Vector{<:Num}, y::Num) false
 
 """
     quad_over_lin(x::Real, y::Real)
