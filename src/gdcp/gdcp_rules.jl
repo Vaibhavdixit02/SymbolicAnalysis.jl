@@ -93,6 +93,10 @@ function find_gcurvature(ex)
                                         else
                                             GAnyMono
                                         end
+                    elseif operation(args[i]) == broadcast
+                        rule, args = gdcprule(f, args...)
+                        f_curvature = rule.gcurvature
+                        f_monotonicity = rule.gmonotonicity
                     end
                 end
             end

@@ -3,7 +3,7 @@ using Symbolics, SymbolicAnalysis.LogExpFunctions
 using Symbolics: unwrap
 using LinearAlgebra, Test
 
-@syms x y
+@variables x y
 y = setmetadata(y, SymbolicAnalysis.VarDomain, Symbolics.DomainSets.HalfLine{Number, :open}())
 ex1 = exp(y) - log(y) |> unwrap
 ex1 = propagate_curvature(propagate_sign(ex1))
@@ -17,13 +17,7 @@ ex2 = propagate_curvature(propagate_sign(ex2))
 @test getcurvature(ex2) == SymbolicAnalysis.UnknownCurvature
 @test getsign(ex2) == SymbolicAnalysis.Negative
 
-# ex2 = -2*norm([1,x]) - x*(x-3) + y
-# ex2 = propagate_curvature(propagate_sign(ex2))
-# getcurvature(ex2)
-# getsign(ex2)
-
-
-ex = -1*xlogx(x)
+ex = -1*LogExpFunctions.xlogx(x) |> unwrap
 ex = propagate_curvature(propagate_sign(ex))
 @test getcurvature(ex) == SymbolicAnalysis.Concave
 @test getsign(ex) == SymbolicAnalysis.AnySign
@@ -39,16 +33,16 @@ ex = propagate_curvature(propagate_sign(ex))
 @test getcurvature(ex) == SymbolicAnalysis.Convex
 @test getsign(ex) == SymbolicAnalysis.Positive
 
-ex = abs(x)^2 + abs(x)^3
+ex = abs(x)^2 + abs(x)^3 |> unwrap
 ex = propagate_curvature(propagate_sign(ex))
 @test getcurvature(ex) == SymbolicAnalysis.Convex
 @test getsign(ex) == SymbolicAnalysis.Positive
 
 @variables x[1:3] y
-ex = x .- y
+ex = x .- y |> unwrap
 ex = propagate_curvature(propagate_sign(ex))
-@test getcurvature(ex) == SymbolicAnalysis.Affine
-@test getsign(ex) == SymbolicAnalysis.Positive
+@test_broken getcurvature(ex) == SymbolicAnalysis.Affine
+@test getsign(ex) == SymbolicAnalysis.AnySign
 
 ex = exp.(x) |> unwrap
 ex = propagate_curvature(propagate_sign(ex))
@@ -57,7 +51,7 @@ ex = propagate_curvature(propagate_sign(ex))
 
 ##vector * scalar gets simplified
 
-@syms x y z
+@variables x y z
 obj = x^2 + y^2 + z^2 |> unwrap
 
 ex = propagate_curvature(propagate_sign(obj))

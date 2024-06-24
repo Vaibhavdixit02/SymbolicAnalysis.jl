@@ -87,7 +87,6 @@ function dcprule(f, args...)
 
     if dcprules_dict[f] isa Vector
         for i in 1:length(dcprules_dict[f])
-            @show (dcprules_dict[f][i].domain isa Domain)
             if (dcprules_dict[f][i].domain isa Domain) && all(issubset.(argsdomain, Ref(dcprules_dict[f][i].domain)))
                 return dcprules_dict[f][i], args
             elseif !(dcprules_dict[f][i].domain isa Domain) && all(issubset.(argsdomain, dcprules_dict[f][i].domain))
@@ -106,19 +105,29 @@ function dcprule(f, args...)
 end
 
 ### Sign ###
-setsign(ex::Symbolic, sign) = setmetadata(ex, Sign, sign)
+setsign(ex::Union{Num, Symbolic}, sign) = setmetadata(ex, Sign, sign)
 setsign(ex, sign) = ex
 
-function getsign(ex::Symbolic)
+function getsign(ex::Union{Num, Symbolic})
     if hasmetadata(ex, Sign)
         return getmetadata(ex, Sign)
     end
     return AnySign
 end
-getsign(ex::Number) = ex < 0 ? Negative : Positive
-getsign(ex::AbstractArray) = Positive
 
-hassign(ex::Symbolic) = hasmetadata(ex, Sign)
+getsign(ex::Union{AbstractFloat, Integer}) = ex < 0 ? Negative : Positive
+
+function getsign(ex::AbstractArray)
+    if all(x -> getsign(x) == Negative, ex)
+        return Negative
+    elseif all(x -> getsign(x) == Positive, ex)
+        return Positive
+    else
+        AnySign
+    end
+end
+
+hassign(ex::Union{Num, Symbolic}) = hasmetadata(ex, Sign)
 hassign(ex) = ex isa Real
 
 Symbolics.arguments(x::Number) = x
@@ -175,11 +184,11 @@ end
 
 ### Curvature ###
 
-setcurvature(ex::Symbolic, curv) = setmetadata(ex, Curvature, curv)
+setcurvature(ex::Union{Num, Symbolic}, curv) = setmetadata(ex, Curvature, curv)
 setcurvature(ex, curv) = ex
-getcurvature(ex::Symbolic) = getmetadata(ex, Curvature)
+getcurvature(ex::Union{Num, Symbolic}) = getmetadata(ex, Curvature)
 getcurvature(ex) = Affine
-hascurvature(ex::Symbolic) = hasmetadata(ex, Curvature)
+hascurvature(ex::Union{Num, Symbolic}) = hasmetadata(ex, Curvature)
 hascurvature(ex) = ex isa Real
 
 function mul_curvature(args)
