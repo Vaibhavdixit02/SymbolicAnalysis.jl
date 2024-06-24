@@ -24,10 +24,10 @@ include("canon.jl")
 struct AnalysisResult
     curvature::SymbolicAnalysis.Curvature
     sign::SymbolicAnalysis.Sign
-    gcurvature::Union{SymbolicAnalysis.GCurvature, Nothing}
+    gcurvature::Union{SymbolicAnalysis.GCurvature,Nothing}
 end
 
-function analyze(ex, M::Union{AbstractManifold, Nothing} = nothing) 
+function analyze(ex, M::Union{AbstractManifold,Nothing} = nothing)
     ex = canonize(ex)
     ex = propagate_sign(ex)
     ex = propagate_curvature(ex)
@@ -39,5 +39,6 @@ function analyze(ex, M::Union{AbstractManifold, Nothing} = nothing)
     end
 end
 
-export propagate_curvature, propagate_sign, getcurvature, getsign, propagate_gcurvature, analyze
+export propagate_curvature,
+    propagate_sign, getcurvature, getsign, propagate_gcurvature, analyze
 end

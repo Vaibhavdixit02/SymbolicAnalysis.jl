@@ -14,25 +14,23 @@ function add_gdcprule(f, manifold, sign, curvature, monotonicity)
     end
     gdcprules_dict[f] = makegrule(manifold, sign, curvature, monotonicity)
 end
-makegrule(manifold, sign, curvature, monotonicity) = (manifold=manifold,
-                sign=sign,
-                gcurvature=curvature,
-                gmonotonicity=monotonicity)
+makegrule(manifold, sign, curvature, monotonicity) =
+    (manifold = manifold, sign = sign, gcurvature = curvature, gmonotonicity = monotonicity)
 
 hasgdcprule(f::Function) = haskey(gdcprules_dict, f)
 hasgdcprule(f) = false
 gdcprule(f, args...) = gdcprules_dict[f], args
 
-setgcurvature(ex::Union{Symbolic, Num}, curv) = setmetadata(ex, GCurvature, curv)
+setgcurvature(ex::Union{Symbolic,Num}, curv) = setmetadata(ex, GCurvature, curv)
 setgcurvature(ex, curv) = ex
-getgcurvature(ex::Union{Symbolic, Num}) = getmetadata(ex, GCurvature)
+getgcurvature(ex::Union{Symbolic,Num}) = getmetadata(ex, GCurvature)
 getgcurvature(ex) = GLinear
-hasgcurvature(ex::Union{Symbolic, Num}) = hasmetadata(ex, GCurvature)
+hasgcurvature(ex::Union{Symbolic,Num}) = hasmetadata(ex, GCurvature)
 hasgcurvature(ex) = ex isa Real
 
 function mul_gcurvature(args)
-    non_constants = findall(x->issym(x) || iscall(x), args)
-    constants = findall(x->!issym(x) && !iscall(x), args)
+    non_constants = findall(x -> issym(x) || iscall(x), args)
+    constants = findall(x -> !issym(x) && !iscall(x), args)
     try
         @assert length(non_constants) <= 1
     catch
@@ -55,8 +53,8 @@ end
 function add_gcurvature(args)
     curvs = find_gcurvature.(args)
     all(==(GLinear), curvs) && return GLinear
-    all(x->x==GConvex || x==GLinear, curvs) && return GConvex
-    all(x->x==GConcave || x==GLinear, curvs) && return GConcave
+    all(x -> x == GConvex || x == GLinear, curvs) && return GConvex
+    all(x -> x == GConcave || x == GLinear, curvs) && return GConcave
     return GUnknownCurvature
 end
 
@@ -72,8 +70,8 @@ function find_gcurvature(ex)
             f_monotonicity = rule.gmonotonicity
         elseif f == LinearAlgebra.logdet
             if operation(args[1]) == conjugation ||
-                operation(args[1]) == LinearAlgebra.diag ||
-                Symbol(operation(args[1])) == :+
+               operation(args[1]) == LinearAlgebra.diag ||
+               Symbol(operation(args[1])) == :+
                 return GConvex
             else
                 return GUnknownCurvature
@@ -87,12 +85,12 @@ function find_gcurvature(ex)
                         rule, args = gdcprule(f, args...)
                         f_curvature = rule.gcurvature
                         f_monotonicity = if rule.gmonotonicity == GIncreasing
-                                            GDecreasing
-                                        elseif rule.gmonotonicity == GDecreasing
-                                            GIncreasing
-                                        else
-                                            GAnyMono
-                                        end
+                            GDecreasing
+                        elseif rule.gmonotonicity == GDecreasing
+                            GIncreasing
+                        else
+                            GAnyMono
+                        end
                     elseif operation(args[i]) == broadcast
                         rule, args = gdcprule(f, args...)
                         f_curvature = rule.gcurvature
@@ -126,38 +124,38 @@ function find_gcurvature(ex)
 
         if f_curvature == Convex || f_curvature == Affine
             if all(enumerate(args)) do (i, arg)
-                    arg_curv = find_gcurvature(arg)
-                    m = get_arg_property(f_monotonicity, i, args)
-                    # @show arg
-                    if arg_curv == GConvex
-                        m == Increasing
-                    elseif arg_curv == GConcave
-                        m == Decreasing
-                    else
-                        arg_curv == GLinear
-                    end
+                arg_curv = find_gcurvature(arg)
+                m = get_arg_property(f_monotonicity, i, args)
+                # @show arg
+                if arg_curv == GConvex
+                    m == Increasing
+                elseif arg_curv == GConcave
+                    m == Decreasing
+                else
+                    arg_curv == GLinear
                 end
+            end
                 return GConvex
             end
         elseif f_curvature == Concave || f_curvature == Affine
             if all(enumerate(args)) do (i, arg)
-                    arg_curv = find_gcurvature(arg)
-                    m = f_monotonicity[i]
-                    if arg_curv == GConcave
-                        m == Increasing
-                    elseif arg_curv == GConvex
-                        m == Decreasing
-                    else
-                        arg_curv == GLinear
-                    end
+                arg_curv = find_gcurvature(arg)
+                m = f_monotonicity[i]
+                if arg_curv == GConcave
+                    m == Increasing
+                elseif arg_curv == GConvex
+                    m == Decreasing
+                else
+                    arg_curv == GLinear
                 end
+            end
                 return GConcave
             end
         elseif f_curvature == Affine
             if all(enumerate(args)) do (i, arg)
-                    arg_curv = find_gcurvature(arg)
-                    arg_curv == GLinear
-                end
+                arg_curv = find_gcurvature(arg)
+                arg_curv == GLinear
+            end
                 return GLinear
             end
         elseif f_curvature isa GCurvature
@@ -176,11 +174,11 @@ end
 
 function propagate_gcurvature(ex, M::SymmetricPositiveDefinite)
     r = [
-         @rule *(~~x) => setgcurvature(~MATCH, mul_gcurvature(~~x))
-         @rule +(~~x) => setgcurvature(~MATCH, add_gcurvature(~~x))
-         @rule ~x => setgcurvature(~x, find_gcurvature(~x))
-        ]
-    ex= Postwalk(Chain(r))(ex)
-    ex= Prewalk(Chain(r))(ex)
+        @rule *(~~x) => setgcurvature(~MATCH, mul_gcurvature(~~x))
+        @rule +(~~x) => setgcurvature(~MATCH, add_gcurvature(~~x))
+        @rule ~x => setgcurvature(~x, find_gcurvature(~x))
+    ]
+    ex = Postwalk(Chain(r))(ex)
+    ex = Prewalk(Chain(r))(ex)
     return ex
 end

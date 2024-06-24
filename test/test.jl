@@ -4,7 +4,11 @@ using Symbolics: unwrap
 using LinearAlgebra, Test
 
 @variables x y
-y = setmetadata(y, SymbolicAnalysis.VarDomain, Symbolics.DomainSets.HalfLine{Number, :open}())
+y = setmetadata(
+    y,
+    SymbolicAnalysis.VarDomain,
+    Symbolics.DomainSets.HalfLine{Number,:open}(),
+)
 ex1 = exp(y) - log(y) |> unwrap
 ex1 = propagate_curvature(propagate_sign(ex1))
 
@@ -17,12 +21,12 @@ ex2 = propagate_curvature(propagate_sign(ex2))
 @test getcurvature(ex2) == SymbolicAnalysis.UnknownCurvature
 @test getsign(ex2) == SymbolicAnalysis.Negative
 
-ex = -1*LogExpFunctions.xlogx(x) |> unwrap
+ex = -1 * LogExpFunctions.xlogx(x) |> unwrap
 ex = propagate_curvature(propagate_sign(ex))
 @test getcurvature(ex) == SymbolicAnalysis.Concave
 @test getsign(ex) == SymbolicAnalysis.AnySign
 
-ex = 2*abs(x) -1 |> unwrap
+ex = 2 * abs(x) - 1 |> unwrap
 ex = propagate_curvature(propagate_sign(ex))
 @test getcurvature(ex) == SymbolicAnalysis.Convex
 @test getsign(ex) == SymbolicAnalysis.AnySign

@@ -1,5 +1,11 @@
-@register_symbolic LinearAlgebra.logdet(X::Union{Symbolics.Arr, Matrix{Num}})
-add_gdcprule(LinearAlgebra.logdet, SymmetricPositiveDefinite, Positive, GLinear, GIncreasing)
+@register_symbolic LinearAlgebra.logdet(X::Union{Symbolics.Arr,Matrix{Num}})
+add_gdcprule(
+    LinearAlgebra.logdet,
+    SymmetricPositiveDefinite,
+    Positive,
+    GLinear,
+    GIncreasing,
+)
 
 """
     conjugation(X, B)
@@ -11,16 +17,16 @@ Conjugation of a matrix `X` by a matrix `B` is defined as `B'X*B`.
     - `B::Matrix`: A matrix.
 """
 function conjugation(X, B)
-    return B'*X*B
+    return B' * X * B
 end
 
-@register_array_symbolic conjugation(X::Union{Symbolics.Arr, Matrix{Num}}, B::Matrix) begin
-    size=(size(B,2), size(B,2))
+@register_array_symbolic conjugation(X::Union{Symbolics.Arr,Matrix{Num}}, B::Matrix) begin
+    size = (size(B, 2), size(B, 2))
 end
 
 add_gdcprule(conjugation, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
 
-@register_symbolic LinearAlgebra.tr(X::Union{Symbolics.Arr, Matrix{Num}})
+@register_symbolic LinearAlgebra.tr(X::Union{Symbolics.Arr,Matrix{Num}})
 add_gdcprule(LinearAlgebra.tr, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
 
 add_gdcprule(sum, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
@@ -37,10 +43,10 @@ Scalar matrix of a symmetric positive definite matrix `X` is defined as `tr(X)*I
     - `k::Int`: The size of the identity matrix.
 """
 function scalar_mat(X, k = size(X, 1))
-    return tr(X)*I(k)
+    return tr(X) * I(k)
 end
 
-@register_symbolic scalar_mat(X::Union{Symbolics.Arr, Matrix{Num}}, k::Int)
+@register_symbolic scalar_mat(X::Union{Symbolics.Arr,Matrix{Num}}, k::Int)
 
 add_gdcprule(scalar_mat, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
 
@@ -73,13 +79,17 @@ Symmetric divergence of two symmetric positive definite matrices `X` and `Y` is 
     - `Y::Matrix`: A symmetric positive definite matrix.
 """
 function sdivergence(X, Y)
-    return logdet((X+Y)/2) - 1/2*logdet(X*Y)
+    return logdet((X + Y) / 2) - 1 / 2 * logdet(X * Y)
 end
 
 @register_symbolic sdivergence(X::Matrix{Num}, Y::Matrix)
 add_gdcprule(sdivergence, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
 
-@register_symbolic Manifolds.distance(M::Manifolds.SymmetricPositiveDefinite, X::AbstractMatrix, Y::Union{Symbolics.Arr, Matrix{Num}})
+@register_symbolic Manifolds.distance(
+    M::Manifolds.SymmetricPositiveDefinite,
+    X::AbstractMatrix,
+    Y::Union{Symbolics.Arr,Matrix{Num}},
+)
 add_gdcprule(Manifolds.distance, SymmetricPositiveDefinite, Positive, GConvex, GAnyMono)
 
 # @register_symbolic LinearAlgebra.exp(X::Union{Symbolics.Arr, Matrix{Num}})
@@ -87,9 +97,21 @@ add_gdcprule(Manifolds.distance, SymmetricPositiveDefinite, Positive, GConvex, G
 
 # add_gdcprule(sqrt, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
 
-add_gdcprule(SymbolicAnalysis.quad_form, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
+add_gdcprule(
+    SymbolicAnalysis.quad_form,
+    SymmetricPositiveDefinite,
+    Positive,
+    GConvex,
+    GIncreasing,
+)
 
-add_gdcprule(LinearAlgebra.eigmax, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
+add_gdcprule(
+    LinearAlgebra.eigmax,
+    SymmetricPositiveDefinite,
+    Positive,
+    GConvex,
+    GIncreasing,
+)
 
 """
     log_quad_form(y, X)
@@ -101,10 +123,10 @@ Log of the quadratic form of a symmetric positive definite matrix `X` and a vect
     - `X::Matrix`: A symmetric positive definite matrix.
 """
 function log_quad_form(y, X)
-    return log(y'*X*y)
+    return log(y' * X * y)
 end
 
-@register_symbolic log_quad_form(y::Vector, X::Union{Symbolics.Arr, Matrix{Num}})
+@register_symbolic log_quad_form(y::Vector, X::Union{Symbolics.Arr,Matrix{Num}})
 add_gdcprule(log_quad_form, SymmetricPositiveDefinite, Positive, GConvex, GIncreasing)
 
 add_gdcprule(inv, SymmetricPositiveDefinite, Positive, GConvex, GDecreasing)
