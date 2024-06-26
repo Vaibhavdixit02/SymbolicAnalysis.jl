@@ -151,16 +151,16 @@ sol = solve(prob, opt, maxiters = 10)
 A = randn(5, 5) #initialize random matrix
 A = A * A' #make it a SPD matrix
 
-function matsqrt(X, p = nothing)
+function matsqrt(X, p = nothing) #setup objective function
     return SymbolicAnalysis.sdivergence(X, A) +
            SymbolicAnalysis.sdivergence(X, Matrix{Float64}(LinearAlgebra.I(5)))
 end
 
-optf = OptimizationFunction(matsqrt, Optimization.AutoForwardDiff())
-prob = OptimizationProblem(optf, A / 2, manifold = M)
-sol = solve(prob, GradientDescentOptimizer(), maxiters = 1000)
+optf = OptimizationFunction(matsqrt, Optimization.AutoZygote()) #setup oracles
+prob = OptimizationProblem(optf, A / 2, manifold = M) #setup problem with manifold and initial point
 
-sqrt(A) ≈ sol.minimizer
+sol = solve(prob, GradientDescentOptimizer()) #solve the problem
+@test sqrt(A) ≈ sol.minimizer
 
 ex = matsqrt(X) |> unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)

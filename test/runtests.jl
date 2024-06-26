@@ -1,5 +1,5 @@
-using SymbolicAnalysis, Test
-using SafeTestsets
+using SymbolicAnalysis: propagate_curvature, propagate_sign, propagate_gcurvature
+using SafeTestsets, Test
 
 @testset "DCP" begin
     include("test.jl")
