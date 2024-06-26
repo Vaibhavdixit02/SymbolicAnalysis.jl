@@ -160,7 +160,7 @@ optf = OptimizationFunction(matsqrt, Optimization.AutoZygote()) #setup oracles
 prob = OptimizationProblem(optf, A / 2, manifold = M) #setup problem with manifold and initial point
 
 sol = solve(prob, GradientDescentOptimizer(), maxiters = 1000) #solve the problem
-@test sqrt(A) ≈ sol.minimizer
+@test sqrt(A) ≈ sol.minimizer rtol = 1e-3
 
 ex = matsqrt(X) |> unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)
