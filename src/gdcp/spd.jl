@@ -1,3 +1,5 @@
+### DGCP Atoms
+
 @register_symbolic LinearAlgebra.logdet(X::Union{Symbolics.Arr,Matrix{Num}})
 add_gdcprule(
     LinearAlgebra.logdet,
