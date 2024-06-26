@@ -6,9 +6,6 @@ This page is intended to be a reference for the atoms that are currently impleme
 
 | Atom | Domain | Sign | Curvature | Monotonicity |
 |:-----|:-------|:-----|:----------|:-------------|
-| + | ℝ | AnySign | Affine | Increasing |
-| - | ℝ | AnySign | Affine | Decreasing |
-| Base.Ref | ℝ | AnySign | Affine | AnyMono |
 | dot | (array_domain(ℝ), array_domain(ℝ)) | AnySign | Affine | Increasing |
 | dotsort | (array_domain(ℝ, 1), array_domain(ℝ, 1)) | AnySign | Convex | (AnyMono, increasing_if_positive ∘ minimum) |
 | StatsBase.geomean | array_domain(HalfLine{Real,:open}(), 1) | Positive | Concave | Increasing |
@@ -63,12 +60,7 @@ This page is intended to be a reference for the atoms that are currently impleme
 | diagm | array_domain(ℝ, 1) | AnySign | Affine | Increasing |
 | diag | array_domain(ℝ, 2) | AnySign | Affine | Increasing |
 | diff | array_domain(ℝ) | AnySign | Affine | Increasing |
-| hcat | array_domain(array_domain(ℝ, 1), 1) | AnySign | Affine | Increasing |
 | kron | (array_domain(ℝ, 2), array_domain(ℝ, 2)) | AnySign | Affine | Increasing |
-| reshape | array_domain(ℝ, 2) | AnySign | Affine | Increasing |
-| triu | array_domain(ℝ, 2) | AnySign | Affine | Increasing |
-| vec | array_domain(ℝ, 2) | AnySign | Affine | Increasing |
-| vcat | array_domain(array_domain(ℝ, 1), 1) | AnySign | Affine | Increasing |
 
 ### Special Cases for ^(x, i)
 
