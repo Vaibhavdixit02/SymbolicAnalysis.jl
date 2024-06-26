@@ -15,13 +15,13 @@ ex = propagate_sign(ex)
 ex = propagate_curvature(ex)
 ex = propagate_gcurvature(ex, M)
 SymbolicAnalysis.getcurvature(ex)
-SymbolicAnalysis.getgcurvature(ex)
+@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
 
 ex = SymbolicAnalysis.logdet(tr(inv(X))) |> unwrap
 ex = propagate_sign(ex)
 ex = propagate_curvature(ex)
 ex = propagate_gcurvature(ex, M)
-SymbolicAnalysis.getgcurvature(ex)
+@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
 SymbolicAnalysis.getcurvature(ex)
 
 @variables Sigma[1:5, 1:5]
@@ -42,7 +42,7 @@ analyze_res = analyze(objective_expr, M)
 objective_expr = SymbolicAnalysis.propagate_gcurvature(objective_expr, M)
 @test SymbolicAnalysis.getgcurvature(objective_expr) == SymbolicAnalysis.GConvex
 
-ex = SymbolicAnalysis.tr(SymbolicAnalysis.conjugation(A, X)) |> unwrap
+ex = SymbolicAnalysis.tr(SymbolicAnalysis.conjugation(X, A)) |> unwrap
 ex = propagate_sign(ex)
 ex = propagate_curvature(ex)
 ex = propagate_gcurvature(ex, M)
