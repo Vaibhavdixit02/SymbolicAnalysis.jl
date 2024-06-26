@@ -64,10 +64,12 @@ function find_gcurvature(ex)
     end
     if iscall(ex)
         f, args = operation(ex), arguments(ex)
-        if f in keys(gdcprules_dict) && !any(iscall.(args))
+        knowngcurv = false
+        if hasgdcprule(f) && !any(iscall.(args))
             rule, args = gdcprule(f, args...)
             f_curvature = rule.gcurvature
             f_monotonicity = rule.gmonotonicity
+            knowngcurv = true
         elseif f == LinearAlgebra.logdet
             if operation(args[1]) == conjugation ||
                operation(args[1]) == LinearAlgebra.diag ||
@@ -78,11 +80,7 @@ function find_gcurvature(ex)
             end
         elseif f == log && operation(args[1]) == LinearAlgebra.tr
             return GConvex
-        elseif f in keys(dcprules_dict) || Symbol(f) == :^
-            rule, args = dcprule(f, args...)
-            f_curvature = rule.curvature
-            f_monotonicity = rule.monotonicity
-        elseif f in keys(gdcprules_dict) && any(iscall.(args))
+        elseif hasgdcprule(f) && any(iscall.(args))
             for i in eachindex(args)
                 if iscall(args[i])
                     if operation(args[i]) == inv
@@ -95,10 +93,12 @@ function find_gcurvature(ex)
                         else
                             GAnyMono
                         end
+                        knowngcurv = true
                     elseif operation(args[i]) == broadcast
                         rule, args = gdcprule(f, args...)
                         f_curvature = rule.gcurvature
                         f_monotonicity = rule.gmonotonicity
+                        knowngcurv = true
                     end
                 end
             end
@@ -118,8 +118,12 @@ function find_gcurvature(ex)
                 @warn "Disciplined Programming does not support multiple non-constant arguments in multiplication"
                 return UnknownGCurvature
             end
-        else
-            return GUnknownCurvature
+        end
+
+        if !(knowngcurv) && hasdcprule(f)
+            rule, args = dcprule(f, args...)
+            f_curvature = rule.curvature
+            f_monotonicity = rule.monotonicity
         end
 
         if f_curvature == Convex || f_curvature == Affine

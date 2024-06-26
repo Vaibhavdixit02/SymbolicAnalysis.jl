@@ -72,7 +72,7 @@ ex = SymbolicAnalysis.propagate_gcurvature(ex, M)
 
 @test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
 
-ex = SymbolicAnalysis.distance(M, As[1], X)^2 |> Symbolics.unwrap
+ex = Manifolds.distance(M, As[1], X)^2 |> Symbolics.unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)
 ex = SymbolicAnalysis.propagate_gcurvature(ex, M)
 
@@ -176,6 +176,7 @@ ex = tr(inv(X)) + logdet(X) |> unwrap
 
 γ = 1 / 2
 ex = (tr(X + γ * I(5)))^(2) |> unwrap
+
 @test analyze(ex, M).gcurvature == SymbolicAnalysis.GConvex
 
 d = 10
