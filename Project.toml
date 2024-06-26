@@ -21,6 +21,11 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 SymbolicUtils = "d1185830-fcd6-423d-90d6-eec64667417b"
 Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
+[compat]
+Distributions = "0.25"
+LinearAlgebra = "1.10"
+julia = "1.10"
+
 [extras]
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 Manopt = "0fc0a36d-df90-57f3-8f93-d78a9fc72bb5"
@@ -30,10 +35,6 @@ OptimizationManopt = "e57b7fff-7ee7-4550-b4f0-90e9476e9fb6"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
-
-[compat]
-julia = "1.10"
-LinearAlgebra = "1.10"
 
 [targets]
 test = ["Test", "Manopt", "Optimization", "OptimizationBase", "OptimizationManopt", "ForwardDiff", "Random", "Zygote"]
