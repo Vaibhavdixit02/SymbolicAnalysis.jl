@@ -15,13 +15,13 @@ ex = propagate_sign(ex)
 ex = propagate_curvature(ex)
 ex = propagate_gcurvature(ex, M)
 SymbolicAnalysis.getcurvature(ex)
-SymbolicAnalysis.getgcurvature(ex)
+@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
 
 ex = SymbolicAnalysis.logdet(tr(inv(X))) |> unwrap
 ex = propagate_sign(ex)
 ex = propagate_curvature(ex)
 ex = propagate_gcurvature(ex, M)
-SymbolicAnalysis.getgcurvature(ex)
+@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
 SymbolicAnalysis.getcurvature(ex)
 
 @variables Sigma[1:5, 1:5]
@@ -42,7 +42,7 @@ analyze_res = analyze(objective_expr, M)
 objective_expr = SymbolicAnalysis.propagate_gcurvature(objective_expr, M)
 @test SymbolicAnalysis.getgcurvature(objective_expr) == SymbolicAnalysis.GConvex
 
-ex = SymbolicAnalysis.tr(SymbolicAnalysis.conjugation(A, X))
+ex = SymbolicAnalysis.tr(SymbolicAnalysis.conjugation(X, A)) |> unwrap
 ex = propagate_sign(ex)
 ex = propagate_curvature(ex)
 ex = propagate_gcurvature(ex, M)
@@ -72,7 +72,7 @@ ex = SymbolicAnalysis.propagate_gcurvature(ex, M)
 
 @test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
 
-ex = SymbolicAnalysis.distance(M, As[1], X)^2 |> Symbolics.unwrap
+ex = Manifolds.distance(M, As[1], X)^2 |> Symbolics.unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)
 ex = SymbolicAnalysis.propagate_gcurvature(ex, M)
 
@@ -130,7 +130,7 @@ optf = OptimizationFunction(f, Optimization.AutoZygote())
 prob = OptimizationProblem(optf, data2[1]; manifold = M)
 
 opt = OptimizationManopt.GradientDescentOptimizer()
-@time sol = solve(prob, opt, maxiters = 10)
+@time sol = solve(prob, opt, maxiters = 100)
 @test sol.objective < 1e-2
 
 M = SymmetricPositiveDefinite(5)
@@ -151,16 +151,16 @@ sol = solve(prob, opt, maxiters = 10)
 A = randn(5, 5) #initialize random matrix
 A = A * A' #make it a SPD matrix
 
-function matsqrt(X, p = nothing)
+function matsqrt(X, p = nothing) #setup objective function
     return SymbolicAnalysis.sdivergence(X, A) +
            SymbolicAnalysis.sdivergence(X, Matrix{Float64}(LinearAlgebra.I(5)))
 end
 
-optf = OptimizationFunction(matsqrt, Optimization.AutoForwardDiff())
-prob = OptimizationProblem(optf, A / 2, manifold = M)
-sol = solve(prob, GradientDescentOptimizer(), maxiters = 1000)
+optf = OptimizationFunction(matsqrt, Optimization.AutoZygote()) #setup oracles
+prob = OptimizationProblem(optf, A / 2, manifold = M) #setup problem with manifold and initial point
 
-sqrt(A) ≈ sol.minimizer
+sol = solve(prob, GradientDescentOptimizer(), maxiters = 1000) #solve the problem
+@test sqrt(A) ≈ sol.minimizer rtol = 1e-3
 
 ex = matsqrt(X) |> unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)
@@ -176,6 +176,7 @@ ex = tr(inv(X)) + logdet(X) |> unwrap
 
 γ = 1 / 2
 ex = (tr(X + γ * I(5)))^(2) |> unwrap
+
 @test analyze(ex, M).gcurvature == SymbolicAnalysis.GConvex
 
 d = 10
