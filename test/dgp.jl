@@ -130,7 +130,7 @@ optf = OptimizationFunction(f, Optimization.AutoZygote())
 prob = OptimizationProblem(optf, data2[1]; manifold = M)
 
 opt = OptimizationManopt.GradientDescentOptimizer()
-@time sol = solve(prob, opt, maxiters = 10)
+@time sol = solve(prob, opt, maxiters = 100)
 @test sol.objective < 1e-2
 
 M = SymmetricPositiveDefinite(5)
@@ -159,7 +159,7 @@ end
 optf = OptimizationFunction(matsqrt, Optimization.AutoZygote()) #setup oracles
 prob = OptimizationProblem(optf, A / 2, manifold = M) #setup problem with manifold and initial point
 
-sol = solve(prob, GradientDescentOptimizer()) #solve the problem
+sol = solve(prob, GradientDescentOptimizer(), maxiters = 1000) #solve the problem
 @test sqrt(A) ≈ sol.minimizer
 
 ex = matsqrt(X) |> unwrap
