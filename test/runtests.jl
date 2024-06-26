@@ -1,4 +1,10 @@
-using SymbolicAnalysis: propagate_curvature, propagate_sign, propagate_gcurvature
+using SymbolicAnalysis:
+    propagate_curvature,
+    propagate_sign,
+    propagate_gcurvature,
+    getcurvature,
+    getsign,
+    getgcurvature
 using SafeTestsets, Test
 
 @testset "DCP" begin

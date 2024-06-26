@@ -42,7 +42,7 @@ analyze_res = analyze(objective_expr, M)
 objective_expr = SymbolicAnalysis.propagate_gcurvature(objective_expr, M)
 @test SymbolicAnalysis.getgcurvature(objective_expr) == SymbolicAnalysis.GConvex
 
-ex = SymbolicAnalysis.tr(SymbolicAnalysis.conjugation(A, X))
+ex = SymbolicAnalysis.tr(SymbolicAnalysis.conjugation(A, X)) |> unwrap
 ex = propagate_sign(ex)
 ex = propagate_curvature(ex)
 ex = propagate_gcurvature(ex, M)
