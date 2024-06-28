@@ -1,5 +1,7 @@
 # SymbolicAnalysis.jl
 
+<a href="https://vaibhavdixit02.github.io/SymbolicAnalysis.jl/dev/"><img src='https://img.shields.io/badge/docs-v1-blue.svg'/></a>
+
 Symbolics.jl based function property propagation for optimization
 
 SymbolicAnalysis is a package for implementing the Disciplined Programming approach to optimization,
