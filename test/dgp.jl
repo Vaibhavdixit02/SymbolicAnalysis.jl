@@ -127,7 +127,7 @@ data2 = [exp(M, q, σ * rand(M; vector_at = q)) for i = 1:m];
 
 f(x, p = nothing) = sum(SymbolicAnalysis.distance(M, data2[i], x)^2 for i = 1:5)
 optf = OptimizationFunction(f, Optimization.AutoZygote())
-prob = OptimizationProblem(optf, data2[1]; manifold = M)
+prob = OptimizationProblem(optf, data2[1]; manifold = M, structural_analysis = true)
 
 opt = OptimizationManopt.GradientDescentOptimizer()
 @time sol = solve(prob, opt, maxiters = 100)
@@ -141,8 +141,8 @@ f(S, p = nothing) =
     1 / 5 * logdet(inv(S))
 
 optf =
-    OptimizationFunction(f, Optimization.AutoZygote(); expr = prob.f.expr, sys = prob.f.sys)
-prob = OptimizationProblem(optf, Array{Float64}(LinearAlgebra.I(5)); manifold = M)
+    OptimizationFunction(f, Optimization.AutoZygote())
+prob = OptimizationProblem(optf, Array{Float64}(LinearAlgebra.I(5)); manifold = M, structural_analysis = true)
 
 opt = OptimizationManopt.GradientDescentOptimizer()
 sol = solve(prob, opt, maxiters = 10)
@@ -157,7 +157,7 @@ function matsqrt(X, p = nothing) #setup objective function
 end
 
 optf = OptimizationFunction(matsqrt, Optimization.AutoZygote()) #setup oracles
-prob = OptimizationProblem(optf, A / 2, manifold = M) #setup problem with manifold and initial point
+prob = OptimizationProblem(optf, A / 2, manifold = M, structural_analysis = true) #setup problem with manifold and initial point
 
 sol = solve(prob, GradientDescentOptimizer(), maxiters = 1000) #solve the problem
 @test sqrt(A) ≈ sol.minimizer rtol = 1e-3
