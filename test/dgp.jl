@@ -2,6 +2,7 @@ using Manifolds, Symbolics, SymbolicAnalysis, LinearAlgebra
 using LinearAlgebra, PDMats
 using Symbolics: unwrap
 using Test, Zygote, ForwardDiff
+using SymbolicAnalysis: propagate_sign, propagate_curvature, propagate_gcurvature
 
 @variables X[1:5, 1:5]
 
@@ -140,9 +141,13 @@ f(S, p = nothing) =
     1 / length(xs) * sum(SymbolicAnalysis.log_quad_form(x, S) for x in xs) +
     1 / 5 * logdet(inv(S))
 
-optf =
-    OptimizationFunction(f, Optimization.AutoZygote())
-prob = OptimizationProblem(optf, Array{Float64}(LinearAlgebra.I(5)); manifold = M, structural_analysis = true)
+optf = OptimizationFunction(f, Optimization.AutoZygote())
+prob = OptimizationProblem(
+    optf,
+    Array{Float64}(LinearAlgebra.I(5));
+    manifold = M,
+    structural_analysis = true,
+)
 
 opt = OptimizationManopt.GradientDescentOptimizer()
 sol = solve(prob, opt, maxiters = 10)
@@ -188,3 +193,59 @@ ex = SymbolicAnalysis.log_quad_form(x, inv(X)) |> unwrap
 ex = SymbolicAnalysis.propagate_sign(ex)
 ex = SymbolicAnalysis.propagate_gcurvature(ex, M)
 @test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
+
+ys = [rand(5) for i = 1:5]
+ex = SymbolicAnalysis.log_quad_form(ys, X) |> unwrap
+ex = SymbolicAnalysis.propagate_sign(ex)
+ex = SymbolicAnalysis.propagate_gcurvature(ex, M)
+@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
+
+ex = SymbolicAnalysis.log_quad_form(ys, inv(X)) |> unwrap
+ex = SymbolicAnalysis.propagate_sign(ex)
+ex = SymbolicAnalysis.propagate_gcurvature(ex, M)
+@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
+
+ex = SymbolicAnalysis.log_quad_form(ys, X) |> unwrap
+ex = SymbolicAnalysis.propagate_sign(ex)
+ex = SymbolicAnalysis.propagate_gcurvature(ex, M)
+@test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
+
+ex = sum(SymbolicAnalysis.eigsummax(log(X), 2)) |> unwrap
+anres = analyze(ex, M)
+@test anres.gcurvature == SymbolicAnalysis.GConvex
+
+ex = sum(SymbolicAnalysis.schatten_norm(log(X), 3)) |> unwrap
+anres = analyze(ex, M)
+@test anres.gcurvature == SymbolicAnalysis.GConvex
+
+ex = exp(SymbolicAnalysis.eigsummax(log(X), 2)) |> unwrap
+anres = analyze(ex, M)
+@test anres.gcurvature == SymbolicAnalysis.GConvex
+
+ex = SymbolicAnalysis.sum_log_eigmax(X, 2) |> unwrap
+anres = analyze(ex, M)
+@test anres.gcurvature == SymbolicAnalysis.GConvex
+
+ex = SymbolicAnalysis.sum_log_eigmax(exp, X, 2) |> unwrap
+anres = analyze(ex, M)
+@test anres.gcurvature == SymbolicAnalysis.GConvex
+
+B = rand(5, 5)
+B = B * B'
+Ys = [rand(5, 5) for i = 1:5]
+Ys = [Y * Y' for Y in Ys]
+ex = tr(SymbolicAnalysis.affine_map(SymbolicAnalysis.conjugation, X, B, Ys[1])) |> unwrap
+anres = analyze(ex, M)
+@test anres.gcurvature == SymbolicAnalysis.GConvex
+
+ex = SymbolicAnalysis.hadamard_product(X, B) |> unwrap
+anres = analyze(ex, M)
+@test anres.gcurvature == SymbolicAnalysis.GConvex
+
+A = rand(5, 5)
+A = A * A'
+ex =
+    logdet(SymbolicAnalysis.affine_map(SymbolicAnalysis.hadamard_product, X, A, B)) |>
+    unwrap
+anres = analyze(ex, M)
+@test anres.gcurvature == SymbolicAnalysis.GConvex

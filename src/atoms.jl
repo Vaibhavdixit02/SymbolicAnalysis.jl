@@ -26,7 +26,7 @@ function dotsort(x::AbstractVector, y::AbstractVector)
     if length(x) != length(y)
         throw(DimensionMismatch("AbstractVectors must have same length"))
     end
-    dot(sort.(x, y))
+    return dot(sort.(x), sort.(y))
 end
 Symbolics.@register_symbolic dotsort(x::AbstractVector, y::AbstractVector)
 add_dcprule(
@@ -87,7 +87,8 @@ function eigsummax(m::Symmetric, k::Int)
     if k < 1 || k > size(m, 1)
         throw(DomainError(k, "k must be between 1 and size(m, 1)"))
     end
-    sum(eigvals(m)[end-k+1:end])
+    nrows = size(m, 1)
+    return sum(eigvals(m, nrows-k+1:nrows))
 end
 Symbolics.@register_symbolic eigsummax(m::Matrix, k::Int)
 add_dcprule(eigsummax, (array_domain(RealLine(), 2), RealLine()), AnySign, Convex, AnyMono)
@@ -105,7 +106,7 @@ function eigsummin(m::Symmetric, k::Int)
     if k < 1 || k > size(m, 1)
         throw(DomainError(k, "k must be between 1 and size(m, 1)"))
     end
-    sum(eigvals(m)[1:k])
+    return sum(eigvals(m, 1:k))
 end
 Symbolics.@register_symbolic eigsummin(m::Matrix, k::Int)
 add_dcprule(eigsummin, (array_domain(RealLine(), 2), RealLine()), AnySign, Concave, AnyMono)
