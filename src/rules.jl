@@ -136,6 +136,9 @@ end
 hassign(ex::Union{Num,Symbolic}) = hasmetadata(ex, Sign)
 hassign(ex) = ex isa Real
 
+hassign(ex::typeof(Base.broadcast)) = true
+getsign(ex::typeof(Base.broadcast)) = Positive
+
 Symbolics.arguments(x::Number) = x
 
 function add_sign(args)

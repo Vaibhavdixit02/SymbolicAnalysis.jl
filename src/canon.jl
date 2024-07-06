@@ -4,8 +4,12 @@ function canonize(ex)
         @rule ((adjoint(~B)*~X)*~B)[Base.OneTo(size(~B, 2)), Base.OneTo(size(~B, 1))] =>
             conjugation(~X, ~B)
     ]
-    rc = SymbolicUtils.Chain(rs)
-    ex = SymbolicUtils.Postwalk(rc)(ex)
-    ex = SymbolicUtils.Prewalk(rc)(ex)
-    return ex
+    try
+        rc = SymbolicUtils.Chain(rs)
+        ex = SymbolicUtils.Postwalk(rc)(ex)
+        ex = SymbolicUtils.Prewalk(rc)(ex)
+        return ex
+    catch
+        return ex
+    end
 end

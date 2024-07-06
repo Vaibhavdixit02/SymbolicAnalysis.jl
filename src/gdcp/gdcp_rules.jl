@@ -65,6 +65,7 @@ function find_gcurvature(ex)
     if iscall(ex)
         f, args = operation(ex), arguments(ex)
         knowngcurv = false
+
         if hasgdcprule(f) && !any(iscall.(args))
             rule, args = gdcprule(f, args...)
             f_curvature = rule.gcurvature
@@ -73,13 +74,29 @@ function find_gcurvature(ex)
         elseif f == LinearAlgebra.logdet
             if operation(args[1]) == conjugation ||
                operation(args[1]) == LinearAlgebra.diag ||
-               Symbol(operation(args[1])) == :+
+               Symbol(operation(args[1])) == :+ ||
+               operation(args[1]) == affine_map ||
+               operation(args[1]) == hadamard_product
+                return GConvex
+            end
+        elseif f == log &&
+               iscall(args[1]) &&
+               (operation(args[1]) == LinearAlgebra.tr || operation(args[1]) == quad_form)
+            return GConvex
+        elseif (f == schatten_norm || f == eigsummax) && operation(args[1]) == log
+            return GConvex
+        elseif f == sum_log_eigmax && hasdcprule(args[1])
+            if dcprule(operation(args[1])) == Convex
                 return GConvex
             else
                 return GUnknownCurvature
             end
-        elseif f == log && operation(args[1]) == LinearAlgebra.tr
-            return GConvex
+        elseif f == affine_map
+            if args[1] == tr || args[1] == conjugation || args[1] == diag
+                return GConvex
+            else
+                return GUnknownCurvature
+            end
         elseif hasgdcprule(f) && any(iscall.(args))
             for i in eachindex(args)
                 if iscall(args[i])
@@ -95,6 +112,11 @@ function find_gcurvature(ex)
                         end
                         knowngcurv = true
                     elseif operation(args[i]) == broadcast
+                        rule, args = gdcprule(f, args...)
+                        f_curvature = rule.gcurvature
+                        f_monotonicity = rule.gmonotonicity
+                        knowngcurv = true
+                    elseif operation(args[i]) == affine_map
                         rule, args = gdcprule(f, args...)
                         f_curvature = rule.gcurvature
                         f_monotonicity = rule.gmonotonicity
