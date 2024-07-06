@@ -93,3 +93,6 @@ This page is intended to be a reference for the atoms that are currently impleme
 | diag | Positive | GConvex | GIncreasing |
 | eigsummax | Positive | GConvex | GIncreasing |
 | schatten_norm | Positive | GConvex | GIncreasing |
+| sum_log_eigmax | Positive | GConvex | GIncreasing |
+| affine_map | Positive | GConvex | GIncreasing |
+| hadamard_product | Positive | GConvex | GIncreasing |
