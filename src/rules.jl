@@ -220,7 +220,7 @@ function mul_curvature(args)
     if !isempty(non_constants)
         expr = args[first(non_constants)]
         curv = find_curvature(expr)
-        return if prod(args[constants]) < 0
+        return if getsign(prod(args[constants])) == Negative
             # flip
             curv == Convex ? Concave : curv == Concave ? Convex : curv
         else

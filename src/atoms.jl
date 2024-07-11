@@ -500,3 +500,6 @@ end
 hasdcprule(::typeof(broadcast)) = true
 
 # add_dcprule(broadcast, (function_domain, array_domain(RealLine())), AnySign, Affine, (AnyMono, AnyMono))
+
+add_dcprule(LinearAlgebra.adjoint, array_domain(RealLine(), 1), AnySign, Affine, Increasing)
+add_dcprule(Base.getindex, array_domain(RealLine(), 1), AnySign, Affine, AnyMono)
