@@ -33,7 +33,7 @@ PDMats = "0.11"
 RecursiveArrayTools = "3"
 SafeTestsets = "0.1"
 StatsBase = "0.34"
-Symbolics = "5"
+Symbolics = "6"
 SymbolicUtils = "=2.1.1"
 julia = "1.10"
 
