@@ -191,7 +191,7 @@ function propagate_sign(ex)
         @rule *(~~x) => setsign(~MATCH, mul_sign(~~x))
         @rule +(~~x) => setsign(~MATCH, add_sign(~~x))
     ]
-    rc = RestartedChain(rs)
+    rc = Chain(rs)
     ex = Postwalk(rc)(ex)
     ex = Prewalk(rc)(ex)
     return ex
@@ -244,7 +244,7 @@ function propagate_curvature(ex)
         @rule +(~~x) => setcurvature(~MATCH, add_curvature(~~x))
         @rule ~x => setcurvature(~x, find_curvature(~x))
     ]
-    rc = RestartedChain(rs)
+    rc = Chain(rs)
     ex = Postwalk(rc)(ex)
     ex = Prewalk(rc)(ex)
     # SymbolicUtils.inspect(ex, metadata = true)
