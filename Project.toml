@@ -34,7 +34,7 @@ RecursiveArrayTools = "3"
 SafeTestsets = "0.1"
 StatsBase = "0.34"
 Symbolics = "6"
-SymbolicUtils = "3"
+SymbolicUtils = "3.1.2"
 julia = "1.10"
 
 [extras]
