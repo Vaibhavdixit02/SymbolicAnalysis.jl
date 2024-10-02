@@ -5,6 +5,7 @@ using SymbolicAnalysis:
     getcurvature,
     getsign,
     getgcurvature
+
 using SafeTestsets, Test
 
 @testset "DCP" begin
