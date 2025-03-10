@@ -62,3 +62,29 @@ result = analyze(ex)
 ```
 
 This example analyzes a quadratic expression over a linear expression, showing that it's convex.
+
+## Analysis on the Lorentz Manifold
+
+We can also perform DGCP analysis on the Lorentz manifold, which is a model of hyperbolic space:
+
+```@example lorentz1
+using SymbolicAnalysis, Symbolics, Manifolds, LinearAlgebra
+
+# Create a Lorentz manifold of dimension 2 (3D ambient space)
+M = Lorentz(2)
+
+# Define symbolic variables and fixed points
+@variables p[1:3]
+q = [0.0, 0.0, 1.0]  # A point on the Lorentz model
+a = [0.0, 0.0, 1.0]  # Vector (0,0,1) needed for log-barrier
+
+# Create a composite function from Lorentz atoms
+ex = 2.0 * SymbolicAnalysis.lorentz_distance(M, q, p) + 
+     SymbolicAnalysis.lorentz_log_barrier(a, p)
+
+# Analyze the expression
+result = analyze(ex, M)
+@show result.gcurvature
+```
+
+This example shows that the sum of the Lorentz distance function and the log-barrier function is geodesically convex on the Lorentz manifold.
