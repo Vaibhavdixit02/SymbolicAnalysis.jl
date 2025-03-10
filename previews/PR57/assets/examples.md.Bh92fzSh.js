@@ -39,11 +39,10 @@ import{_ as s,c as n,o as e,ai as p}from"./chunks/framework.CHJRJuCF.js";const m
 <span class="line"><span># Define symbolic variables and fixed points</span></span>
 <span class="line"><span>@variables p[1:3]</span></span>
 <span class="line"><span>q = [0.0, 0.0, 1.0]  # A point on the Lorentz model</span></span>
-<span class="line"><span>a = [0.0, 0.0, 1.0]  # Vector (0,0,1) needed for log-barrier</span></span>
 <span class="line"><span></span></span>
 <span class="line"><span># Create a composite function from Lorentz atoms</span></span>
-<span class="line"><span>ex = 2.0 * SymbolicAnalysis.lorentz_distance(M, q, p) + </span></span>
-<span class="line"><span>     SymbolicAnalysis.lorentz_log_barrier(a, p)</span></span>
+<span class="line"><span>ex = 2.0 * Manifolds.distance(M, q, p) + </span></span>
+<span class="line"><span>     SymbolicAnalysis.lorentz_log_barrier(p)</span></span>
 <span class="line"><span></span></span>
 <span class="line"><span># Analyze the expression</span></span>
 <span class="line"><span>result = analyze(ex, M)</span></span>
