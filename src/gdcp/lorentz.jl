@@ -8,7 +8,11 @@ using Manifolds
 using LinearAlgebra
 using Symbolics: Symbolic, @register_symbolic, unwrap, variables
 
-@register_symbolic Manifolds.distance(M::Manifolds.Lorentz, p::AbstractVector, q::Union{Symbolics.Arr,AbstractVector})
+@register_symbolic Manifolds.distance(
+    M::Manifolds.Lorentz,
+    p::AbstractVector,
+    q::Union{Symbolics.Arr,AbstractVector},
+)
 add_gdcprule(Manifolds.distance, Manifolds.Lorentz, Positive, GConvex, GAnyMono)
 
 """
@@ -43,7 +47,10 @@ function lorentz_homogeneous_quadratic(A::AbstractMatrix, p::AbstractVector)
     return p' * A * p
 end
 
-@register_symbolic lorentz_homogeneous_quadratic(A::AbstractMatrix, p::Union{Symbolics.Arr,AbstractVector})
+@register_symbolic lorentz_homogeneous_quadratic(
+    A::AbstractMatrix,
+    p::Union{Symbolics.Arr,AbstractVector},
+)
 add_gdcprule(lorentz_homogeneous_quadratic, Manifolds.Lorentz, Positive, GConvex, GAnyMono)
 
 """
@@ -60,15 +67,22 @@ function lorentz_homogeneous_diagonal(a::AbstractVector, p::AbstractVector)
     if length(a) != length(p)
         throw(DimensionMismatch("Vectors must have same length"))
     end
-    
+
     if minimum(a[1:end-1]) + a[end] < 0
-        throw(ArgumentError("For geodesic convexity, min(a[1:end-1]) + a[end] ≥ 0 is required"))
+        throw(
+            ArgumentError(
+                "For geodesic convexity, min(a[1:end-1]) + a[end] ≥ 0 is required",
+            ),
+        )
     end
-    
-    return sum(a .* p.^2)
+
+    return sum(a .* p .^ 2)
 end
 
-@register_symbolic lorentz_homogeneous_diagonal(a::AbstractVector, p::Union{Symbolics.Arr,AbstractVector})
+@register_symbolic lorentz_homogeneous_diagonal(
+    a::AbstractVector,
+    p::Union{Symbolics.Arr,AbstractVector},
+)
 add_gdcprule(lorentz_homogeneous_diagonal, Manifolds.Lorentz, Positive, GConvex, GAnyMono)
 
 """
@@ -84,16 +98,20 @@ For geodesic convexity, condition ‖b'A‖₂ ≤ -(1/√2)(b'A)_{d+1} must be 
 """
 function lorentz_least_squares(A::AbstractMatrix, b::AbstractVector, p::AbstractVector)
     bA = b' * A
-    condition = norm(bA) <= -sqrt(1/2) * bA[end]
-    
+    condition = norm(bA) <= -sqrt(1 / 2) * bA[end]
+
     if !condition
         throw(ArgumentError("Condition ‖b'A‖₂ ≤ -(1/√2)(b'A)_{d+1} is not satisfied"))
     end
-    
+
     return 0.5 * norm(A * p - b)^2
 end
 
-@register_symbolic lorentz_least_squares(A::AbstractMatrix, b::AbstractVector, p::Union{Symbolics.Arr,AbstractVector})
+@register_symbolic lorentz_least_squares(
+    A::AbstractMatrix,
+    b::AbstractVector,
+    p::Union{Symbolics.Arr,AbstractVector},
+)
 add_gdcprule(lorentz_least_squares, Manifolds.Lorentz, Positive, GConvex, GAnyMono)
 
 """
@@ -109,21 +127,24 @@ The matrix O must be an element of the orthochronous Lorentz group O⁺(1,d).
 function lorentz_transform(O::AbstractMatrix, p::AbstractVector)
     d = length(p) - 1
     J = Diagonal([ones(d)..., -1])
-    
+
     # Check if O is in the Lorentz group
-    if !isapprox(O' * J * O, J, rtol=1e-10)
+    if !isapprox(O' * J * O, J, rtol = 1e-10)
         throw(ArgumentError("Matrix is not in the Lorentz group"))
     end
-    
+
     # Check if O preserves the positive time direction (orthochronous)
-    if (O * [zeros(d)..., 1])[end] <= 0
+    if (O*[zeros(d)..., 1])[end] <= 0
         throw(ArgumentError("Matrix does not preserve the positive time direction"))
     end
-    
+
     return O * p
 end
 
-@register_symbolic lorentz_transform(O::AbstractMatrix, p::Union{Symbolics.Arr,AbstractVector})
+@register_symbolic lorentz_transform(
+    O::AbstractMatrix,
+    p::Union{Symbolics.Arr,AbstractVector},
+)
 # Not adding a rule since this preserves geodesic convexity but doesn't have a specific curvature
 
 # Export functions

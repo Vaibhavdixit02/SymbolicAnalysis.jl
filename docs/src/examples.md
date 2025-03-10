@@ -76,11 +76,10 @@ M = Lorentz(2)
 # Define symbolic variables and fixed points
 @variables p[1:3]
 q = [0.0, 0.0, 1.0]  # A point on the Lorentz model
-a = [0.0, 0.0, 1.0]  # Vector (0,0,1) needed for log-barrier
 
 # Create a composite function from Lorentz atoms
-ex = 2.0 * SymbolicAnalysis.lorentz_distance(M, q, p) + 
-     SymbolicAnalysis.lorentz_log_barrier(a, p)
+ex = 2.0 * Manifolds.distance(M, q, p) + 
+     SymbolicAnalysis.lorentz_log_barrier(p)
 
 # Analyze the expression
 result = analyze(ex, M)
