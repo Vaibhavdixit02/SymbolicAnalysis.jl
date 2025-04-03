@@ -100,14 +100,18 @@ For geodesic convexity, the following conditions must be satisfied:
 """
 function lorentz_least_squares(X::AbstractMatrix, y::AbstractVector, p::AbstractVector)
     Xty = X' * y
-    
+
     # Check conditions for geodesic convexity
-    condition1 = sum(Xty[1:end-1].^2) <= Xty[end]^2
+    condition1 = sum(Xty[1:end-1] .^ 2) <= Xty[end]^2
     condition2 = Xty[end] <= 0
-    
+
     if !(condition1 && condition2)
-        throw(ArgumentError("Conditions for geodesic convexity not satisfied: " * 
-                           "∑^d_i=1(X'y)^2_i ≤ (X'y)^2_{d+1} and (X'y)_{d+1} ≤ 0"))
+        throw(
+            ArgumentError(
+                "Conditions for geodesic convexity not satisfied: " *
+                "∑^d_i=1(X'y)^2_i ≤ (X'y)^2_{d+1} and (X'y)_{d+1} ≤ 0",
+            ),
+        )
     end
 
     return norm(X * p - y)^2
