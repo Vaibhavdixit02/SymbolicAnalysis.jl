@@ -12,7 +12,7 @@ using Symbolics: Symbolic, @register_symbolic, unwrap, variables
     M::Manifolds.Lorentz,
     p::AbstractVector,
     q::Union{Symbolics.Arr,AbstractVector},
-)
+) false
 add_gdcprule(Manifolds.distance, Manifolds.Lorentz, Positive, GConvex, GAnyMono)
 
 """
@@ -86,25 +86,31 @@ end
 add_gdcprule(lorentz_homogeneous_diagonal, Manifolds.Lorentz, Positive, GConvex, GAnyMono)
 
 """
-    lorentz_least_squares(A::AbstractMatrix, b::AbstractVector, p::AbstractVector)
+    lorentz_least_squares(X::AbstractMatrix, y::AbstractVector, p::AbstractVector)
 
-Computes the least squares function `½‖Ap - b‖²` for the Lorentz model.
-For geodesic convexity, condition ‖b'A‖₂ ≤ -(1/√2)(b'A)_{d+1} must be satisfied.
+Computes the least squares function `‖y - Xp‖²_2 = y'y - 2y'Xp + p'X'Xp` for the Lorentz model.
+For geodesic convexity, the following conditions must be satisfied:
+1. ∑^d_i=1(X'y)^2_i ≤ (X'y)^2_{d+1}
+2. (X'y)_{d+1} ≤ 0
 
 # Arguments
-    - `A::AbstractMatrix`: A matrix that satisfies the geodesic convexity condition.
-    - `b::AbstractVector`: A vector that satisfies the geodesic convexity condition.
+    - `X::AbstractMatrix`: A matrix in R^(n×(d+1)).
+    - `y::AbstractVector`: A vector in R^n.
     - `p::AbstractVector`: A point on the Lorentz manifold.
 """
-function lorentz_least_squares(A::AbstractMatrix, b::AbstractVector, p::AbstractVector)
-    bA = b' * A
-    condition = norm(bA) <= -sqrt(1 / 2) * bA[end]
-
-    if !condition
-        throw(ArgumentError("Condition ‖b'A‖₂ ≤ -(1/√2)(b'A)_{d+1} is not satisfied"))
+function lorentz_least_squares(X::AbstractMatrix, y::AbstractVector, p::AbstractVector)
+    Xty = X' * y
+    
+    # Check conditions for geodesic convexity
+    condition1 = sum(Xty[1:end-1].^2) <= Xty[end]^2
+    condition2 = Xty[end] <= 0
+    
+    if !(condition1 && condition2)
+        throw(ArgumentError("Conditions for geodesic convexity not satisfied: " * 
+                           "∑^d_i=1(X'y)^2_i ≤ (X'y)^2_{d+1} and (X'y)_{d+1} ≤ 0"))
     end
 
-    return 0.5 * norm(A * p - b)^2
+    return norm(X * p - y)^2
 end
 
 @register_symbolic lorentz_least_squares(
@@ -148,5 +154,5 @@ end
 # Not adding a rule since this preserves geodesic convexity but doesn't have a specific curvature
 
 # Export functions
-export lorentz_distance, lorentz_log_barrier, lorentz_homogeneous_quadratic
+export lorentz_log_barrier, lorentz_homogeneous_quadratic
 export lorentz_homogeneous_diagonal, lorentz_least_squares, lorentz_transform
