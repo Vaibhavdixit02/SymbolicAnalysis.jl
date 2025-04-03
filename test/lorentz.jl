@@ -42,10 +42,11 @@ using SymbolicAnalysis: propagate_sign, propagate_curvature, propagate_gcurvatur
     @test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
 
     # Test lorentz_least_squares
-    # Create a valid A and b that satisfy the geodesic convexity condition
-    A = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0]
-    b = [0.0, 0.0, -1.0]  # (b'A)_{d+1} = -1, and ‖b'A‖₂ = 1 ≤ sqrt(1/2) * 1
-    ex = SymbolicAnalysis.lorentz_least_squares(A, b, p) |> unwrap
+    # Create a valid X and y that satisfy the geodesic convexity conditions:
+    # ∑^d_i=1(X'y)^2_i ≤ (X'y)^2_{d+1} and (X'y)_{d+1} ≤ 0
+    X = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0]
+    y = [0.0, 0.0, -1.0]  # X'y = [0.0, 0.0, -1.0], which satisfies both conditions
+    ex = SymbolicAnalysis.lorentz_least_squares(X, y, p) |> unwrap
     ex = propagate_sign(ex)
     ex = propagate_gcurvature(ex, M)
     @test SymbolicAnalysis.getgcurvature(ex) == SymbolicAnalysis.GConvex
