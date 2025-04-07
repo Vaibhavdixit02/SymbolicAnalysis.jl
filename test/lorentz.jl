@@ -56,32 +56,32 @@ using SymbolicAnalysis: propagate_sign, propagate_curvature, propagate_gcurvatur
         # Define variables for symbolic testing
         @variables p[1:3]
         M = Manifolds.Lorentz(2)  # 2D Lorentz model (3D ambient)
-        
+
         # Create a valid test case with data that satisfies geodesic convexity conditions
         # We need X and y such that:
         # 1. ∑_{i=1}^d (X'y)²_i ≤ (X'y)²_{d+1}
         # 2. (X'y)_{d+1} ≤ 0
         X = [1.0 0.0 2.0; 0.0 1.0 3.0; 2.0 2.0 10.0]
         y = [1.0, 2.0, -5.0]
-        
+
         # Verify conditions explicitly for the test
         Xty = X' * y
-        @test sum(Xty[1:2].^2) <= Xty[3]^2  # Condition 1
+        @test sum(Xty[1:2] .^ 2) <= Xty[3]^2  # Condition 1
         @test Xty[3] <= 0                   # Condition 2
-        
+
         # Compose the least squares problem from atoms
         A = X' * X  # Positive semidefinite, automatically ∂L-copositive
         b = -2 * X' * y  # Must be in Lorentz cone
         c = y' * y
-        
+
         # Create expression using lorentz_nonhomogeneous_quadratic
         expr = SymbolicAnalysis.lorentz_nonhomogeneous_quadratic(A, b, c, p)
-        
+
         # Verify geodesic convexity through DGCP framework
         expr = propagate_sign(expr)
         expr = propagate_gcurvature(expr, M)
         @test SymbolicAnalysis.getgcurvature(expr) == SymbolicAnalysis.GConvex
-        
+
         # Verify that the composition matches the direct expansion
         direct_expr = c - 2 * p' * X' * y + p' * X' * X * p
         @test isequal(simplify(expr), simplify(direct_expr))
